@@ -172,7 +172,10 @@ const DoctorProfile = () => {
               <div>
                 <p className="text-xs font-semibold uppercase text-slate-600 tracking-wide">Langues</p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                    {languages.map((lang) => (
+                  {languages.map((lang) => (
+                    <span key={lang} className="text-sm bg-slate-100 text-slate-700 px-3 py-1 rounded-full">
+                      {lang}
+                    </span>
                   ))}
                 </div>
               </div>

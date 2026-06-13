@@ -195,13 +195,6 @@ const SearchDoctors = () => {
                   </Link>
                 );
               })}
-
-                      <div className="mt-3 flex items-center gap-2 border-t border-slate-200 pt-3 text-xs text-slate-600">
-                        <span>📍 {doctor.wilaya}</span>
-                      </div>
-                    </article>
-                  </Link>
-                ))}
               </div>
             ) : (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-12 text-center">
