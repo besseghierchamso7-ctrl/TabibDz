@@ -1,51 +1,61 @@
 const AdminDashboard = () => {
+  const metrics = [
+    { label: 'Patients actifs', value: '1 248', note: 'Enregistrés ce mois', color: 'bg-sky-100 text-sky-700' },
+    { label: 'Médecins vérifiés', value: '342', note: 'Profils approuvés', color: 'bg-emerald-100 text-emerald-700' },
+    { label: 'Rendez-vous', value: '5 980', note: 'Confirmés cette semaine', color: 'bg-amber-100 text-amber-700' },
+    { label: 'Revenu mensuel', value: '3 450 000 DA', note: 'Estimation des revenus', color: 'bg-violet-100 text-violet-700' }
+  ];
+
+  const requests = [
+    { name: 'Dr. Leila R.', specialty: 'Pédiatrie', status: 'Nouveau' },
+    { name: 'Dr. Samir B.', specialty: 'Cardiologie', status: 'Nouveau' },
+    { name: 'Dr. Hakim C.', specialty: 'Dermatologie', status: 'En cours' }
+  ];
+
+  const recentAppointments = [
+    { patient: 'Nadia Brahimi', doctor: 'Dr. Yasmine Ben', date: '14 Juin, 11:00', status: 'Confirmé' },
+    { patient: 'Karim L.', doctor: 'Dr. Sofiane M.', date: '14 Juin, 12:30', status: 'En attente' },
+    { patient: 'Lina S.', doctor: 'Dr. Amine D.', date: '15 Juin, 09:00', status: 'Annulé' }
+  ];
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mb-8 rounded-3xl bg-white p-8 shadow-xl">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+      <div className="mb-8 rounded-[2rem] bg-gradient-to-r from-slate-900 via-slate-900 to-blue-600 p-8 text-white shadow-xl shadow-slate-200/40">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.4em] text-blue-600">Espace Admin</p>
-            <h1 className="mt-3 text-4xl font-bold text-slate-900">Tableau de bord</h1>
-            <p className="mt-2 max-w-2xl text-slate-600">Surveillez les patients, les médecins, les rendez-vous et les statistiques de revenus.</p>
+            <p className="text-sm uppercase tracking-[0.4em] text-sky-200">Espace Admin</p>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight">Tableau de bord Tabib DZ</h1>
+            <p className="mt-3 max-w-2xl text-slate-200">Analysez les performances, approuvez les médecins et suivez les rendez-vous en temps réel.</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <button className="rounded-full bg-blue-600 px-6 py-3 text-white shadow-lg hover:bg-blue-700">Ajouter une spécialité</button>
-            <button className="rounded-full border border-slate-200 bg-white px-6 py-3 text-slate-900 hover:bg-slate-100">Vérifier médecins</button>
+            <button className="rounded-full bg-white/15 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/25">Nouvelle spécialité</button>
+            <button className="rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-900 transition hover:bg-slate-200">Rapport PDF</button>
           </div>
         </div>
       </div>
 
       <section className="grid gap-6 xl:grid-cols-4">
-        <div className="rounded-3xl bg-white p-6 shadow-lg">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Patients</p>
-          <p className="mt-4 text-4xl font-semibold text-slate-900">1,248</p>
-          <p className="mt-2 text-sm text-slate-500">Nouveaux ce mois</p>
-        </div>
-        <div className="rounded-3xl bg-white p-6 shadow-lg">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Médecins</p>
-          <p className="mt-4 text-4xl font-semibold text-slate-900">342</p>
-          <p className="mt-2 text-sm text-slate-500">Vérifiés</p>
-        </div>
-        <div className="rounded-3xl bg-white p-6 shadow-lg">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Rendez-vous</p>
-          <p className="mt-4 text-4xl font-semibold text-slate-900">5,980</p>
-          <p className="mt-2 text-sm text-slate-500">Confirmés cette semaine</p>
-        </div>
-        <div className="rounded-3xl bg-white p-6 shadow-lg">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Revenu</p>
-          <p className="mt-4 text-4xl font-semibold text-slate-900">3,450,000 DA</p>
-          <p className="mt-2 text-sm text-slate-500">Revenu estimé</p>
-        </div>
+        {metrics.map((item) => (
+          <div key={item.label} className="rounded-3xl bg-white p-6 shadow-lg">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">{item.label}</p>
+            <p className="mt-4 text-4xl font-semibold text-slate-900">{item.value}</p>
+            <p className="mt-2 text-sm text-slate-500">{item.note}</p>
+            <div className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${item.color}`}>{item.label.split(' ')[0]}</div>
+          </div>
+        ))}
       </section>
 
-      <section className="mt-8 grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
+      <section className="mt-8 grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
         <div className="rounded-3xl bg-white p-6 shadow-lg">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-2xl font-semibold text-slate-900">Rendez-vous récents</h2>
-              <p className="mt-2 text-sm text-slate-500">Dernières demandes et statuts en temps réel.</p>
+              <p className="mt-2 text-sm text-slate-500">Dernières demandes reçues et actions administratives.</p>
             </div>
-            <button className="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-700 hover:bg-slate-200">Voir tous</button>
+            <div className="flex items-center gap-3">
+              <button className="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-700 hover:bg-slate-200">Filtrer</button>
+              <button className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Voir tout</button>
+            </div>
           </div>
           <div className="mt-6 overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
@@ -59,17 +69,15 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {[
-                  { patient: 'Nadia Brahimi', doctor: 'Dr. Yasmine Ben', date: '14 Juin, 11:00', status: 'Confirmé' },
-                  { patient: 'Karim L.', doctor: 'Dr. Sofiane M.', date: '14 Juin, 12:30', status: 'En attente' },
-                  { patient: 'Lina S.', doctor: 'Dr. Amine D.', date: '15 Juin, 09:00', status: 'Annulé' }
-                ].map((item) => (
+                {recentAppointments.map((item) => (
                   <tr key={`${item.patient}-${item.date}`}>
                     <td className="px-4 py-4 text-slate-700">{item.patient}</td>
                     <td className="px-4 py-4 text-slate-700">{item.doctor}</td>
                     <td className="px-4 py-4 text-slate-700">{item.date}</td>
                     <td className="px-4 py-4">
-                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${item.status === 'Confirmé' ? 'bg-emerald-100 text-emerald-700' : item.status === 'En attente' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>{item.status}</span>
+                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${item.status === 'Confirmé' ? 'bg-emerald-100 text-emerald-700' : item.status === 'En attente' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
+                        {item.status}
+                      </span>
                     </td>
                     <td className="px-4 py-4 text-slate-700">Gérer</td>
                   </tr>
@@ -81,13 +89,15 @@ const AdminDashboard = () => {
 
         <div className="space-y-6">
           <div className="rounded-3xl bg-white p-6 shadow-lg">
-            <h2 className="text-xl font-semibold text-slate-900">Demandes de vérification</h2>
-            <p className="mt-2 text-sm text-slate-500">Examiner les nouveaux dossiers de médecins.</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">Demandes de vérification</h2>
+                <p className="mt-2 text-sm text-slate-500">Actionnez les nouvelles demandes de médecins.</p>
+              </div>
+              <button className="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-700 hover:bg-slate-200">Voir tous</button>
+            </div>
             <div className="mt-6 space-y-4">
-              {[
-                { name: 'Dr. Leila R.', specialty: 'Pédiatrie', status: 'Nouveau' },
-                { name: 'Dr. Samir B.', specialty: 'Cardiologie', status: 'Nouveau' }
-              ].map((item) => (
+              {requests.map((item) => (
                 <div key={item.name} className="rounded-3xl border border-slate-200 p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -96,16 +106,22 @@ const AdminDashboard = () => {
                     </div>
                     <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">{item.status}</span>
                   </div>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700">Approuver</button>
+                    <button className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs text-slate-700 hover:bg-slate-100">Voir dossier</button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
+
           <div className="rounded-3xl bg-white p-6 shadow-lg">
             <h2 className="text-xl font-semibold text-slate-900">Activité récente</h2>
             <div className="mt-6 space-y-4 text-sm text-slate-600">
               <p>• 12 nouveaux patients inscrits aujourd'hui.</p>
               <p>• 4 rendez-vous confirmés en attente de paiement.</p>
               <p>• 2 avis publiés pour les médecins.</p>
+              <p>• 1 médecin vérifié dans la matinée.</p>
             </div>
           </div>
         </div>
