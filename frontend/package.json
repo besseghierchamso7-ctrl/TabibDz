@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build",
-    "vercel-build": "npx vite build",
+    "build": "node ./node_modules/vite/dist/node/cli.js build",
+    "vercel-build": "node ./node_modules/vite/dist/node/cli.js build",
     "preview": "vite preview"
   },
+
   "dependencies": {
     "axios": "^1.5.0",
     "react": "^18.3.1",
