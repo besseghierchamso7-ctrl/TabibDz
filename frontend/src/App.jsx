@@ -1,4 +1,6 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useContext } from 'react';
+import { AuthContext, AuthProvider } from './contexts/AuthContext';
 import Home from './pages/Home';
 import SearchDoctors from './pages/SearchDoctors';
 import DoctorProfile from './pages/DoctorProfile';
@@ -12,7 +14,18 @@ import ForgotPassword from './pages/ForgotPassword';
 import Contact from './pages/Contact';
 import Layout from './components/Layout';
 
-function App() {
+// Protected Route Component
+const ProtectedRoute = ({ children, requiredRole }) => {
+  const { user, loading } = useContext(AuthContext);
+
+  if (loading) return <div className="flex items-center justify-center min-h-screen">Chargement...</div>;
+  if (!user) return <Navigate to="/login" />;
+  if (requiredRole && user.role !== requiredRole) return <Navigate to="/" />;
+
+  return children;
+};
+
+function AppRoutes() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <Routes>
@@ -30,12 +43,20 @@ function App() {
         {/* Booking Page with Layout */}
         <Route element={<Layout><Booking /></Layout>} path="/booking/:id" />
 
-        {/* Dashboard Pages with Layout */}
-        <Route element={<Layout><PatientDashboard /></Layout>} path="/dashboard/patient" />
-        <Route element={<Layout><DoctorDashboard /></Layout>} path="/dashboard/doctor" />
-        <Route element={<Layout><AdminDashboard /></Layout>} path="/dashboard/admin" />
+        {/* Dashboard Pages with Layout - Protected */}
+        <Route element={<ProtectedRoute requiredRole="patient"><Layout><PatientDashboard /></Layout></ProtectedRoute>} path="/dashboard/patient" />
+        <Route element={<ProtectedRoute requiredRole="doctor"><Layout><DoctorDashboard /></Layout></ProtectedRoute>} path="/dashboard/doctor" />
+        <Route element={<ProtectedRoute requiredRole="admin"><Layout><AdminDashboard /></Layout></ProtectedRoute>} path="/dashboard/admin" />
       </Routes>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }
 
