@@ -11,6 +11,7 @@ const Home = () => {
           <div className="mt-8 flex flex-wrap gap-4">
             <Link to="/search" className="rounded-full bg-blue-600 px-6 py-3 text-white shadow-lg hover:bg-blue-700">Rechercher un médecin</Link>
             <Link to="/contact" className="rounded-full border border-slate-300 px-6 py-3 text-slate-900 hover:bg-slate-100">Contact</Link>
+            <Link to="/dashboard/admin" className="rounded-full bg-slate-900 px-6 py-3 text-white shadow-lg hover:bg-slate-800">Espace Admin</Link>
           </div>
         </div>
         <div className="rounded-[2rem] bg-white p-8 shadow-xl">
