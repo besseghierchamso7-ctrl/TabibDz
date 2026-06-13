@@ -4,29 +4,44 @@ const User = require('../models/User');
 const { generateToken, generateRefreshToken } = require('../utils/token');
 const { sendEmail } = require('../config/mail');
 
+const createApiError = (message, statusCode = 400) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+};
+
+const sanitizeUser = (user) => {
+  const userObject = user.toObject ? user.toObject() : { ...user };
+  delete userObject.password;
+  delete userObject.refreshToken;
+  delete userObject.resetPasswordToken;
+  delete userObject.resetPasswordExpires;
+  return userObject;
+};
+
 const register = async (data) => {
   const userExists = await User.findOne({ email: data.email });
   if (userExists) {
-    throw new Error('Email already registered');
+    throw createApiError('Email already registered', 409);
   }
   const user = await User.create(data);
   const token = generateToken(user);
   const refreshToken = generateRefreshToken(user);
   user.refreshToken = refreshToken;
   await user.save();
-  return { user, token, refreshToken };
+  return { user: sanitizeUser(user), token, refreshToken };
 };
 
 const login = async (email, password) => {
   const user = await User.findOne({ email });
   if (!user || !(await user.matchPassword(password))) {
-    throw new Error('Invalid credentials');
+    throw createApiError('Invalid credentials', 401);
   }
   const token = generateToken(user);
   const refreshToken = generateRefreshToken(user);
   user.refreshToken = refreshToken;
   await user.save();
-  return { user, token, refreshToken };
+  return { user: sanitizeUser(user), token, refreshToken };
 };
 
 const refreshAuthToken = async (token) => {

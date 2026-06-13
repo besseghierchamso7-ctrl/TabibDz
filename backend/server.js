@@ -22,7 +22,17 @@ const app = express();
 
 connectDB();
 
-app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
+const localOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+const allowedOrigins = [process.env.CLIENT_URL, ...localOrigins].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  }
+}));
 app.use(helmet());
 app.use(xssClean());
 app.use(mongoSanitize());

@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       return userData;
     } catch (err) {
-      const message = err.response?.data?.message || 'Registration failed';
+      const message = err.response?.data?.message || err.message || 'Registration failed';
       setError(message);
       throw new Error(message);
     }
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       return userData;
     } catch (err) {
-      const message = err.response?.data?.message || 'Login failed';
+      const message = err.response?.data?.message || err.message || 'Login failed';
       setError(message);
       throw new Error(message);
     }
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
       await apiClient.post('/auth/forgot-password', { email });
       return true;
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to send reset email';
+      const message = err.response?.data?.message || err.message || 'Failed to send reset email';
       setError(message);
       throw new Error(message);
     }
