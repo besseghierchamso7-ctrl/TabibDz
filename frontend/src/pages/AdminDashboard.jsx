@@ -1,4 +1,31 @@
+import { useState } from 'react';
+import apiClient from '../api/apiClient';
+
 const AdminDashboard = () => {
+  const [showSpecialtyForm, setShowSpecialtyForm] = useState(false);
+  const [specialtyName, setSpecialtyName] = useState('');
+  const [specialtyDescription, setSpecialtyDescription] = useState('');
+  const [createStatus, setCreateStatus] = useState('');
+
+  const handleSpecialtySubmit = async (event) => {
+    event.preventDefault();
+    setCreateStatus('Envoi en cours...');
+
+    try {
+      await apiClient.post('/admin/specialties', {
+        name: specialtyName,
+        description: specialtyDescription
+      });
+      setCreateStatus('Spécialité ajoutée avec succès');
+      setSpecialtyName('');
+      setSpecialtyDescription('');
+      setTimeout(() => setShowSpecialtyForm(false), 1200);
+    } catch (error) {
+      setCreateStatus('Erreur lors de la création de la spécialité');
+      console.error(error);
+    }
+  };
+
   const metrics = [
     { label: 'Patients actifs', value: '1 248', note: 'Enregistrés ce mois', color: 'bg-sky-100 text-sky-700' },
     { label: 'Médecins vérifiés', value: '342', note: 'Profils approuvés', color: 'bg-emerald-100 text-emerald-700' },
@@ -28,11 +55,54 @@ const AdminDashboard = () => {
             <p className="mt-3 max-w-2xl text-slate-200">Analysez les performances, approuvez les médecins et suivez les rendez-vous en temps réel.</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <button className="rounded-full bg-white/15 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/25">Nouvelle spécialité</button>
+            <button onClick={() => setShowSpecialtyForm(true)} className="rounded-full bg-white/15 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/25">Nouvelle spécialité</button>
             <button className="rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-900 transition hover:bg-slate-200">Rapport PDF</button>
           </div>
         </div>
       </div>
+
+      {showSpecialtyForm && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/50 px-4 py-6">
+          <div className="w-full max-w-2xl rounded-[2rem] bg-white p-8 shadow-2xl">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-900">Ajouter une nouvelle spécialité</h2>
+                <p className="mt-2 text-sm text-slate-500">Créez une spécialité médicale disponible dans le système.</p>
+              </div>
+              <button onClick={() => { setShowSpecialtyForm(false); setCreateStatus(''); }} className="text-slate-500 transition hover:text-slate-900">Fermer</button>
+            </div>
+            <form onSubmit={handleSpecialtySubmit} className="mt-8 space-y-6">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Nom de la spécialité</label>
+                <input
+                  value={specialtyName}
+                  onChange={(e) => setSpecialtyName(e.target.value)}
+                  required
+                  className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
+                  placeholder="Ex : Cardiologie"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Description</label>
+                <textarea
+                  value={specialtyDescription}
+                  onChange={(e) => setSpecialtyDescription(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
+                  placeholder="Faire une courte description"
+                />
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500">{createStatus}</p>
+                <div className="flex flex-wrap gap-3">
+                  <button type="submit" className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Créer</button>
+                  <button type="button" onClick={() => { setShowSpecialtyForm(false); setCreateStatus(''); }} className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm text-slate-900 hover:bg-slate-100">Annuler</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <section className="grid gap-6 xl:grid-cols-4">
         {metrics.map((item) => (
