@@ -10,22 +10,30 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Contact from './pages/Contact';
+import Layout from './components/Layout';
 
 function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/search" element={<SearchDoctors />} />
-        <Route path="/doctor/:id" element={<DoctorProfile />} />
-        <Route path="/booking/:id" element={<Booking />} />
-        <Route path="/dashboard/patient" element={<PatientDashboard />} />
-        <Route path="/dashboard/doctor" element={<DoctorDashboard />} />
-        <Route path="/dashboard/admin" element={<AdminDashboard />} />
+        {/* Public Pages with Layout */}
+        <Route element={<Layout><Home /></Layout>} path="/" />
+        <Route element={<Layout><SearchDoctors /></Layout>} path="/search" />
+        <Route element={<Layout><DoctorProfile /></Layout>} path="/doctor/:id" />
+        <Route element={<Layout><Contact /></Layout>} path="/contact" />
+
+        {/* Auth Pages without Layout */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/contact" element={<Contact />} />
+
+        {/* Booking Page with Layout */}
+        <Route element={<Layout><Booking /></Layout>} path="/booking/:id" />
+
+        {/* Dashboard Pages with Layout */}
+        <Route element={<Layout><PatientDashboard /></Layout>} path="/dashboard/patient" />
+        <Route element={<Layout><DoctorDashboard /></Layout>} path="/dashboard/doctor" />
+        <Route element={<Layout><AdminDashboard /></Layout>} path="/dashboard/admin" />
       </Routes>
     </div>
   );
