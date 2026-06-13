@@ -17,7 +17,7 @@ const SearchDoctors = () => {
       try {
         setLoading(true);
         const response = await apiClient.get('/doctors');
-        setDoctors(response.data.data || []);
+        setDoctors(response.data || []);
       } catch (err) {
         console.error('Error fetching doctors:', err);
         // Use fallback data if API fails
@@ -42,7 +42,7 @@ const SearchDoctors = () => {
     const fetchSpecialties = async () => {
       try {
         const response = await apiClient.get('/admin/specialties'); // or use a public endpoint
-        setSpecialties(response.data.data || []);
+        setSpecialties(response.data || []);
       } catch (err) {
         // Fallback specialties
         setSpecialties([
@@ -60,19 +60,15 @@ const SearchDoctors = () => {
   }, []);
 
   const filteredDoctors = doctors.filter(doc => {
-    const specialty = specialties.find(s => s._id === doc.specialty) || {};
+    const specialtyName = doc.specialty?.name || doc.specialty || '';
+    const wilayaName = doc.wilaya?.name || doc.wilaya || '';
+    const gender = doc.gender || '';
     return (
-      (!filters.wilaya || doc.wilaya === filters.wilaya) &&
-      (!filters.specialty || specialty.name === filters.specialty) &&
-      (!filters.gender || doc.gender === filters.gender)
+      (!filters.wilaya || wilayaName === filters.wilaya) &&
+      (!filters.specialty || specialtyName === filters.specialty) &&
+      (!filters.gender || gender === filters.gender)
     );
   });
-
-  const filteredDoctors = doctors.filter(doc =>
-    (!filters.wilaya || doc.wilaya === filters.wilaya) &&
-    (!filters.specialty || doc.specialty === filters.specialty) &&
-    (!filters.gender || doc.gender === filters.gender)
-  );
 
   return (
     <>
@@ -156,19 +152,25 @@ const SearchDoctors = () => {
 
             {filteredDoctors.length > 0 ? (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredDoctors.map((doctor) => (
-                  <Link key={doctor.id || doctor._id} to={`/doctor/${doctor.id || doctor._id}`}>
-                    <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md transition hover:shadow-xl hover:border-blue-300">
-                      <div className="flex items-start gap-4">
-                        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-2xl font-bold text-blue-600">
-                          {(doctor.firstName || doctor.name || 'D')[0].toUpperCase()}
+                {filteredDoctors.map((doctor) => {
+                  const firstName = doctor.user?.firstName || doctor.firstName || '';
+                  const lastName = doctor.user?.lastName || doctor.lastName || '';
+                  const specialtyName = doctor.specialty?.name || doctor.specialty || 'N/A';
+                  const wilayaName = doctor.wilaya?.name || doctor.wilaya || 'N/A';
+                  const consultationFee = doctor.consultationPrice || doctor.consultationFee || doctor.price || 0;
+                  return (
+                    <Link key={doctor._id || doctor.id} to={`/doctor/${doctor._id || doctor.id}`}>
+                      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-md transition hover:shadow-xl hover:border-blue-300">
+                        <div className="flex items-start gap-4">
+                          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-2xl font-bold text-blue-600">
+                            {(firstName || 'D')[0].toUpperCase()}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-slate-900">Dr. {firstName} {lastName}</h3>
+                            <p className="mt-1 text-sm text-slate-600">{specialtyName}</p>
+                            <p className="mt-1 text-xs text-slate-500">{doctor.experience || doctor.user?.experience || 0} ans d'expérience</p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-slate-900">Dr. {doctor.firstName} {doctor.lastName}</h3>
-                          <p className="mt-1 text-sm text-slate-600">{doctor.specialty}</p>
-                          <p className="mt-1 text-xs text-slate-500">{doctor.experience} ans d'expérience</p>
-                        </div>
-                      </div>
 
                       <div className="mt-4 flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700">
@@ -180,12 +182,19 @@ const SearchDoctors = () => {
                       <div className="mt-4 flex items-center justify-between">
                         <div>
                           <p className="text-xs text-slate-600">À partir de</p>
-                          <p className="text-lg font-bold text-blue-600">{doctor.consultationFee || doctor.price} DA</p>
+                          <p className="text-lg font-bold text-blue-600">{consultationFee} DA</p>
                         </div>
                         <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
                           Réserver
                         </button>
                       </div>
+                      <div className="mt-3 flex items-center gap-2 border-t border-slate-200 pt-3 text-xs text-slate-600">
+                        <span>📍 {wilayaName}</span>
+                      </div>
+                    </article>
+                  </Link>
+                );
+              })}
 
                       <div className="mt-3 flex items-center gap-2 border-t border-slate-200 pt-3 text-xs text-slate-600">
                         <span>📍 {doctor.wilaya}</span>

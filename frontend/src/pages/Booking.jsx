@@ -17,7 +17,7 @@ const Booking = () => {
     const fetchDoctor = async () => {
       try {
         const response = await apiClient.get(`/doctors/${id}`);
-        setDoctor(response.data.data);
+        setDoctor(response.data);
       } catch (err) {
         console.error('Error fetching doctor:', err);
         // Fallback doctor data
@@ -52,12 +52,12 @@ const Booking = () => {
     }
 
     try {
+      const scheduledAt = `${formData.date}T${formData.time}:00.000Z`;
       await apiClient.post('/appointments', {
         doctorId: id,
-        appointmentDate: formData.date,
-        appointmentTime: formData.time,
+        scheduledAt,
         reason: formData.reason,
-        status: 'pending'
+        price: doctor?.consultationPrice || doctor?.price || 3000
       });
       alert('Rendez-vous réservé avec succès!');
       navigate('/dashboard/patient');
@@ -84,9 +84,9 @@ const Booking = () => {
           <div className="mb-8 border-b border-slate-200 pb-8">
             {doctor ? (
               <>
-                <h2 className="text-xl font-semibold text-slate-900">Dr. {doctor.firstName} {doctor.lastName}</h2>
-                <p className="mt-2 text-slate-600">{doctor.specialty} • {doctor.wilaya} • {doctor.rating} ⭐</p>
-                <p className="mt-3 text-2xl font-bold text-blue-600">{doctor.consultationFee || 4500} DA</p>
+                <h2 className="text-xl font-semibold text-slate-900">Dr. {doctor.user?.firstName || doctor.firstName} {doctor.user?.lastName || doctor.lastName}</h2>
+                <p className="mt-2 text-slate-600">{doctor.specialty?.name || doctor.specialty} • {doctor.wilaya?.name || doctor.wilaya} • {doctor.rating || 0} ⭐</p>
+                <p className="mt-3 text-2xl font-bold text-blue-600">{doctor.consultationPrice || doctor.consultationFee || 4500} DA</p>
               </>
             ) : (
               <p className="text-slate-600">Chargement des informations du médecin...</p>

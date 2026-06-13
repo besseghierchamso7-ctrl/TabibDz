@@ -9,6 +9,14 @@ const registerUser = async (req, res, next) => {
   }
 };
 
+const getCurrentUser = async (req, res, next) => {
+  try {
+    res.json(req.user);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -48,4 +56,4 @@ const resetPasswordController = async (req, res, next) => {
   }
 };
 
-module.exports = { registerUser, loginUser, refreshToken, forgotPassword, resetPasswordController };
+module.exports = { registerUser, loginUser, refreshToken, forgotPassword, resetPasswordController, getCurrentUser };

@@ -1,9 +1,14 @@
 const { bookAppointment, getAppointments, updateAppointmentStatus, rescheduleAppointment } = require('../services/appointmentService');
+const Patient = require('../models/Patient');
 
 const createAppointment = async (req, res, next) => {
   try {
+    const patientProfile = await Patient.findOne({ user: req.user._id });
+    if (!patientProfile) {
+      return res.status(400).json({ message: 'Patient profile not found' });
+    }
     const appointment = await bookAppointment({
-      patientId: req.body.patientId,
+      patientId: patientProfile._id,
       doctorId: req.body.doctorId,
       scheduledAt: req.body.scheduledAt,
       reason: req.body.reason,

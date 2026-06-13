@@ -11,13 +11,22 @@ export const AuthProvider = ({ children }) => {
 
   // Load user from token on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      setToken(storedToken);
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-      // You could verify token here
-    }
-    setLoading(false);
+    const loadUser = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        setToken(storedToken);
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        try {
+          const res = await apiClient.get('/auth/me');
+          setUser(res.data);
+        } catch (err) {
+          setToken(null);
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+    loadUser();
   }, []);
 
   // Update axios headers when token changes

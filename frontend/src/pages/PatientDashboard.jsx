@@ -10,18 +10,18 @@ const PatientDashboard = () => {
     const fetchAppointments = async () => {
       try {
         const response = await apiClient.get('/appointments');
-        const data = response.data.data || [];
+        const data = response.data || [];
         setAppointments(data);
 
-        // Calculate stats
         const confirmed = data.filter(a => a.status === 'confirmed').length;
         const pending = data.filter(a => a.status === 'pending').length;
+        const doctorCount = new Set(data.map(a => a.doctor?._id || a.doctorId)).size;
         
         setStats({
           total: data.length,
-          confirmed: confirmed,
-          pending: pending,
-          doctors: data.length > 0 ? new Set(data.map(a => a.doctorId)).size : 0
+          confirmed,
+          pending,
+          doctors: data.length > 0 ? doctorCount : 0
         });
       } catch (err) {
         console.error('Error fetching appointments:', err);
@@ -79,22 +79,29 @@ const PatientDashboard = () => {
         <div className="rounded-2xl bg-white p-8 shadow-md border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900">Mes rendez-vous</h2>
           <div className="mt-6 space-y-4">
-            {appointments.map((apt) => (
-              <div key={apt.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-4 hover:bg-slate-50">
-                <div>
-                  <p className="font-semibold text-slate-900">{apt.doctor}</p>
-                  <p className="text-sm text-slate-600">{apt.specialty}</p>
+            {appointments.map((apt) => {
+              const doctorName = apt.doctor?.user ? `${apt.doctor.user.firstName} ${apt.doctor.user.lastName}` : apt.doctor?.name || apt.doctorId || 'Médecin';
+              const specialty = apt.doctor?.specialty?.name || apt.specialty || 'N/A';
+              const scheduledDate = apt.scheduledAt ? new Date(apt.scheduledAt).toLocaleDateString('fr-FR') : apt.date;
+              const scheduledTime = apt.scheduledAt ? new Date(apt.scheduledAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : apt.time;
+              const statusLabel = apt.status === 'confirmed' ? 'Confirmé' : apt.status === 'pending' ? 'En attente' : apt.status;
+              return (
+                <div key={apt._id || apt.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-4 hover:bg-slate-50">
+                  <div>
+                    <p className="font-semibold text-slate-900">{doctorName}</p>
+                    <p className="text-sm text-slate-600">{specialty}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-slate-900">{scheduledDate} à {scheduledTime}</p>
+                    <span className={`inline-flex mt-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                      statusLabel === 'Confirmé' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {statusLabel}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-slate-900">{apt.date} à {apt.time}</p>
-                  <span className={`inline-flex mt-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                    apt.status === 'Confirmé' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    {apt.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

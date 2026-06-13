@@ -47,4 +47,12 @@ const listReviewsAdmin = async () => {
   return Review.find().populate('patient doctor');
 };
 
-module.exports = { getDashboardStats, manageSpecialty, manageWilaya, listUsers, listDoctorsAdmin, listAppointmentsAdmin, listReviewsAdmin };
+const listSpecialties = async () => {
+  return Specialty.find().sort({ name: 1 });
+};
+
+const listWilayas = async () => {
+  return Wilaya.find().sort({ name: 1 });
+};
+
+module.exports = { getDashboardStats, manageSpecialty, manageWilaya, listUsers, listDoctorsAdmin, listAppointmentsAdmin, listReviewsAdmin, listSpecialties, listWilayas };
