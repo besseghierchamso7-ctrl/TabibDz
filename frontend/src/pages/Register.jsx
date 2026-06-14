@@ -5,6 +5,7 @@ import { AuthContext } from '../contexts/AuthContext';
 const Register = () => {
   const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '', role: 'patient' });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { register } = useContext(AuthContext);
@@ -36,7 +37,11 @@ const Register = () => {
         password: formData.password,
         role: formData.role
       });
-      navigate('/dashboard/patient');
+      navigate('/login', {
+        state: {
+          message: 'Inscription réussie ! Un email de confirmation vous a été envoyé.'
+        }
+      });
     } catch (err) {
       setError(err.message || 'Erreur lors de l\'inscription');
     } finally {
@@ -63,6 +68,11 @@ const Register = () => {
           {error && (
             <div className="mt-6 rounded-lg bg-rose-50 border border-rose-200 p-4">
               <p className="text-sm font-medium text-rose-700">{error}</p>
+            </div>
+          )}
+          {success && (
+            <div className="mt-6 rounded-lg bg-emerald-50 border border-emerald-200 p-4">
+              <p className="text-sm font-medium text-emerald-700">{success}</p>
             </div>
           )}
 

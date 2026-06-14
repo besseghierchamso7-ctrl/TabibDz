@@ -1,18 +1,21 @@
 import { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setIsLoading(true);
 
     try {
@@ -31,6 +34,13 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  useState(() => {
+    if (location.state?.message) {
+      setSuccess(location.state.message);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 px-4 py-12">
@@ -51,6 +61,11 @@ const Login = () => {
           {error && (
             <div className="mt-6 rounded-lg bg-rose-50 border border-rose-200 p-4">
               <p className="text-sm font-medium text-rose-700">{error}</p>
+            </div>
+          )}
+          {success && (
+            <div className="mt-6 rounded-lg bg-emerald-50 border border-emerald-200 p-4">
+              <p className="text-sm font-medium text-emerald-700">{success}</p>
             </div>
           )}
 

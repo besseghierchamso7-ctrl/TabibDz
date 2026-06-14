@@ -19,6 +19,23 @@ const sanitizeUser = (user) => {
   return userObject;
 };
 
+const sendRegistrationEmail = async (user) => {
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Bienvenue sur Tabib DZ',
+      html: `
+        <p>Bonjour ${user.firstName},</p>
+        <p>Merci de vous être inscrit sur Tabib DZ. Votre compte a été créé avec succès.</p>
+        <p>Vous pouvez maintenant vous connecter et prendre rendez-vous avec nos médecins.</p>
+        <p>À bientôt,<br/>L'équipe Tabib DZ</p>
+      `
+    });
+  } catch (error) {
+    console.error('Registration email failed:', error);
+  }
+};
+
 const register = async (data) => {
   const userExists = await User.findOne({ email: data.email });
   if (userExists) {
@@ -29,6 +46,7 @@ const register = async (data) => {
   const refreshToken = generateRefreshToken(user);
   user.refreshToken = refreshToken;
   await user.save();
+  await sendRegistrationEmail(user);
   return { user: sanitizeUser(user), token, refreshToken };
 };
 
