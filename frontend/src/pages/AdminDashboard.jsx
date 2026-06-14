@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import apiClient from '../api/apiClient';
 
 const AdminDashboard = () => {
@@ -6,6 +6,64 @@ const AdminDashboard = () => {
   const [specialtyName, setSpecialtyName] = useState('');
   const [specialtyDescription, setSpecialtyDescription] = useState('');
   const [createStatus, setCreateStatus] = useState('');
+  const [stats, setStats] = useState({
+    patientsCount: 0,
+    doctorsCount: 0,
+    appointmentsCount: 0,
+    revenue: 0,
+    reviewsCount: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [requests, setRequests] = useState([]);
+  const [recentAppointments, setRecentAppointments] = useState([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setStatsLoading(true);
+      try {
+        const [dashboardRes, doctorsRes, appointmentsRes] = await Promise.all([
+          apiClient.get('/admin/dashboard'),
+          apiClient.get('/admin/doctors'),
+          apiClient.get('/admin/appointments')
+        ]);
+
+        const dashboardData = dashboardRes.data;
+        setStats({
+          patientsCount: dashboardData.patientsCount || 0,
+          doctorsCount: dashboardData.doctorsCount || 0,
+          appointmentsCount: dashboardData.appointmentsCount || 0,
+          revenue: dashboardData.revenue || 0,
+          reviewsCount: dashboardData.reviewsCount || 0
+        });
+
+        const pendingRequests = (doctorsRes.data || []).filter((doctor) => doctor.status === 'pending');
+        setRequests(pendingRequests.slice(0, 3).map((doctor) => ({
+          name: `Dr. ${doctor.user?.firstName || ''} ${doctor.user?.lastName || ''}`.trim(),
+          specialty: doctor.specialty?.name || 'N/A',
+          status: 'Nouveau'
+        })));
+
+        const recent = (appointmentsRes.data || [])
+          .sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt))
+          .slice(0, 3)
+          .map((appointment) => ({
+            patient: appointment.patient?.user ? `${appointment.patient.user.firstName} ${appointment.patient.user.lastName}` : appointment.patient?.name || 'Patient',
+            doctor: appointment.doctor?.user ? `Dr. ${appointment.doctor.user.firstName} ${appointment.doctor.user.lastName}` : appointment.doctor?.name || 'Médecin',
+            date: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : 'N/A',
+            time: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+            status: appointment.status === 'confirmed' ? 'Confirmé' : appointment.status === 'pending' ? 'En attente' : appointment.status === 'cancelled' ? 'Annulé' : appointment.status === 'completed' ? 'Terminé' : appointment.status
+          }));
+
+        setRecentAppointments(recent);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des données admin :', error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const handleSpecialtySubmit = async (event) => {
     event.preventDefault();
@@ -27,22 +85,10 @@ const AdminDashboard = () => {
   };
 
   const metrics = [
-    { label: 'Patients actifs', value: '1 248', note: 'Enregistrés ce mois', color: 'bg-sky-100 text-sky-700' },
-    { label: 'Médecins vérifiés', value: '342', note: 'Profils approuvés', color: 'bg-emerald-100 text-emerald-700' },
-    { label: 'Rendez-vous', value: '5 980', note: 'Confirmés cette semaine', color: 'bg-amber-100 text-amber-700' },
-    { label: 'Revenu mensuel', value: '3 450 000 DA', note: 'Estimation des revenus', color: 'bg-violet-100 text-violet-700' }
-  ];
-
-  const requests = [
-    { name: 'Dr. Leila R.', specialty: 'Pédiatrie', status: 'Nouveau' },
-    { name: 'Dr. Samir B.', specialty: 'Cardiologie', status: 'Nouveau' },
-    { name: 'Dr. Hakim C.', specialty: 'Dermatologie', status: 'En cours' }
-  ];
-
-  const recentAppointments = [
-    { patient: 'Nadia Brahimi', doctor: 'Dr. Yasmine Ben', date: '14 Juin, 11:00', status: 'Confirmé' },
-    { patient: 'Karim L.', doctor: 'Dr. Sofiane M.', date: '14 Juin, 12:30', status: 'En attente' },
-    { patient: 'Lina S.', doctor: 'Dr. Amine D.', date: '15 Juin, 09:00', status: 'Annulé' }
+    { label: 'Patients actifs', value: statsLoading ? '...' : stats.patientsCount.toLocaleString('fr-FR'), note: 'Total de patients', color: 'bg-sky-100 text-sky-700' },
+    { label: 'Médecins vérifiés', value: statsLoading ? '...' : stats.doctorsCount.toLocaleString('fr-FR'), note: 'Médecins enregistrés', color: 'bg-emerald-100 text-emerald-700' },
+    { label: 'Rendez-vous', value: statsLoading ? '...' : stats.appointmentsCount.toLocaleString('fr-FR'), note: 'Total des rendez-vous', color: 'bg-amber-100 text-amber-700' },
+    { label: 'Revenu mensuel', value: statsLoading ? '...' : `${stats.revenue.toLocaleString('fr-FR')} DA`, note: 'Chiffre d’affaires validé', color: 'bg-violet-100 text-violet-700' }
   ];
 
   return (
