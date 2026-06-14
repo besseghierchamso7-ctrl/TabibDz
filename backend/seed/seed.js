@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
 const dotenv = require('dotenv');
 const User = require('../models/User');
 const Patient = require('../models/Patient');
@@ -10,8 +11,11 @@ const Review = require('../models/Review');
 
 dotenv.config();
 
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+console.log('Seed DNS servers:', dns.getServers());
+
 const connectDB = async () => {
-  await mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+  await mongoose.connect(process.env.MONGO_URI);
 };
 
 const importData = async () => {

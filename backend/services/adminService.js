@@ -40,7 +40,16 @@ const listDoctorsAdmin = async () => {
 };
 
 const listAppointmentsAdmin = async () => {
-  return Appointment.find().populate('doctor patient');
+  return Appointment.find()
+    .populate({ path: 'patient', populate: { path: 'user', select: 'firstName lastName' } })
+    .populate({
+      path: 'doctor',
+      populate: [
+        { path: 'user', select: 'firstName lastName' },
+        { path: 'specialty', select: 'name' },
+        { path: 'wilaya', select: 'name' }
+      ]
+    });
 };
 
 const listReviewsAdmin = async () => {
