@@ -30,4 +30,6 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+const admin = authorize('admin');
+
+module.exports = { protect, authorize, admin };

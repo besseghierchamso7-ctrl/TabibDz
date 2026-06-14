@@ -15,6 +15,12 @@ const patientRoutes = require('./routes/patientRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const clinicRoutes = require('./routes/clinicRoutes');
+const teleconsultationRoutes = require('./routes/teleconsultationRoutes');
+const queueRoutes = require('./routes/queueRoutes');
+const waitingListRoutes = require('./routes/waitingListRoutes');
+const prescriptionRoutes = require('./routes/prescriptionRoutes');
+const reminderRoutes = require('./routes/reminderRoutes');
 const rateLimiter = require('./middleware/rateLimiter');
 
 dotenv.config();
@@ -75,6 +81,12 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/clinics', clinicRoutes);
+app.use('/api/teleconsultations', teleconsultationRoutes);
+app.use('/api/queues', queueRoutes);
+app.use('/api/waiting-list', waitingListRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/reminders', reminderRoutes);
 
 app.use(errorHandler);
 
