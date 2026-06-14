@@ -35,7 +35,7 @@ const Login = () => {
     }
   };
 
-  useState(() => {
+  useEffect(() => {
     if (location.state?.message) {
       setSuccess(location.state.message);
       window.history.replaceState({}, document.title);
