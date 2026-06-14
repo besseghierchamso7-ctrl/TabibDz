@@ -44,6 +44,14 @@ app.use(rateLimiter);
 app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads')));
 
+app.get('/', (req, res) => {
+  res.send('Tabib DZ API is running');
+});
+
+app.get('/api', (req, res) => {
+  res.json({ message: 'Tabib DZ API is running' });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/patients', patientRoutes);
