@@ -5,6 +5,4 @@ const specialtySchema = new mongoose.Schema({
   description: { type: String, trim: true, maxlength: 500 }
 }, { timestamps: true });
 
-specialtySchema.index({ name: 1 });
-
 module.exports = mongoose.model('Specialty', specialtySchema);

@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const dns = require('dns');
 const helmet = require('helmet');
 const xssClean = require('xss-clean');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -19,6 +20,9 @@ const rateLimiter = require('./middleware/rateLimiter');
 dotenv.config();
 
 const app = express();
+
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+console.log('Using DNS servers:', dns.getServers());
 
 connectDB();
 

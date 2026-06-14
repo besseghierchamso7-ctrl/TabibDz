@@ -8,6 +8,4 @@ const patientSchema = new mongoose.Schema({
   notifications: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Notification' }]
 }, { timestamps: true });
 
-patientSchema.index({ user: 1 });
-
 module.exports = mongoose.model('Patient', patientSchema);
