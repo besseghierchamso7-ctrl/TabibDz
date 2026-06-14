@@ -21,6 +21,8 @@ const queueRoutes = require('./routes/queueRoutes');
 const waitingListRoutes = require('./routes/waitingListRoutes');
 const prescriptionRoutes = require('./routes/prescriptionRoutes');
 const reminderRoutes = require('./routes/reminderRoutes');
+const specialtyRoutes = require('./routes/specialtyRoutes');
+const wilayaRoutes = require('./routes/wilayaRoutes');
 const rateLimiter = require('./middleware/rateLimiter');
 
 dotenv.config();
@@ -75,6 +77,28 @@ app.get('/api', (req, res) => {
   res.json({ message: 'Tabib DZ API is running' });
 });
 
+app.get('/api/stats/public', async (req, res, next) => {
+  try {
+    const User = require('./models/User');
+    const Doctor = require('./models/Doctor');
+    const Appointment = require('./models/Appointment');
+
+    const [patientCount, doctorCount, appointmentCount] = await Promise.all([
+      User.countDocuments({ role: 'patient' }),
+      Doctor.countDocuments({ isVerified: true }),
+      Appointment.countDocuments({ status: 'confirmed' })
+    ]);
+
+    res.json({
+      patients: patientCount,
+      doctors: doctorCount,
+      appointments: appointmentCount
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/patients', patientRoutes);
@@ -87,6 +111,8 @@ app.use('/api/queues', queueRoutes);
 app.use('/api/waiting-list', waitingListRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/specialties', specialtyRoutes);
+app.use('/api/wilayas', wilayaRoutes);
 
 app.use(errorHandler);
 
