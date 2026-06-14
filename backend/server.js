@@ -24,12 +24,19 @@ connectDB();
 
 const normalizeOrigin = (origin) => origin?.replace(/\/$/, '');
 const localOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
-const allowedOrigins = [process.env.CLIENT_URL, ...localOrigins].map(normalizeOrigin).filter(Boolean);
+const allowedOrigins = new Set([
+  normalizeOrigin(process.env.CLIENT_URL),
+  'https://tabib-dz-gamma.vercel.app',
+  ...localOrigins
+].filter(Boolean));
 
 const corsOptions = {
   origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
     const normalizedOrigin = normalizeOrigin(origin);
-    if (!origin || allowedOrigins.includes(normalizedOrigin) || allowedOrigins.length === 0) {
+    if (allowedOrigins.has(normalizedOrigin)) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
