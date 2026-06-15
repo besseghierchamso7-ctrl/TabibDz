@@ -12,7 +12,10 @@ const Header = () => {
     { label: 'Accueil', to: '/' },
     { label: 'Chercher un médecin', to: '/search' },
     { label: 'Contact', to: '/contact' }
-  ];
+  ].filter((link) => {
+    if (user?.role === 'doctor' && (link.label === 'Accueil' || link.label === 'Chercher un médecin' || link.label === 'Contact')) return false;
+    return true;
+  });
 
   const handleLogout = () => {
     logout();
@@ -35,7 +38,6 @@ const Header = () => {
             <div className="rounded-full bg-blue-600 px-3 py-2 text-white font-bold text-xl">
               Tabib DZ
             </div>
-            <span className="hidden text-xl font-bold text-slate-900 sm:inline">Tabib DZ</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -59,9 +61,6 @@ const Header = () => {
                 </button>
                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 rounded-lg border border-slate-200 bg-white shadow-lg z-50">
-                    <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 border-b border-slate-200">
-                      👤 Mon profil
-                    </Link>
                     <Link to={getDashboardPath()} onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 border-b border-slate-200">
                       📊 Tableau de bord
                     </Link>
@@ -73,7 +72,7 @@ const Header = () => {
               </div>
             ) : (
               <>
-                <button onClick={() => navigate('/login')} className="rounded-full border border-slate-300 px-5 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-100">
+                <button onClick={() => navigate('/login')} className="px-5 py-2 text-sm font-medium text-slate-900 transition hover:text-blue-600">
                   Connexion
                 </button>
                 <button onClick={() => navigate('/register')} className="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-blue-700">

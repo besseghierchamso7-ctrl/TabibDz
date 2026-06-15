@@ -11,7 +11,15 @@ const registerUser = async (req, res, next) => {
 
 const getCurrentUser = async (req, res, next) => {
   try {
-    res.json(req.user);
+    const user = req.user.toObject ? req.user.toObject() : { ...req.user };
+    if (user.role === 'doctor') {
+      const Doctor = require('../models/Doctor');
+      const doctorProfile = await Doctor.findOne({ user: user._id }).select('_id');
+      if (doctorProfile) {
+        user.doctorProfileId = doctorProfile._id.toString();
+      }
+    }
+    res.json(user);
   } catch (error) {
     next(error);
   }

@@ -1,9 +1,10 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import apiClient from '../api/apiClient';
 
 const DoctorProfile = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,11 +34,6 @@ const DoctorProfile = () => {
     consultationPrice: 4500,
     experience: '12 ans',
     about: 'Spécialisée en cardiologie générale et interventionnelle, avec une expertise particulière dans le traitement des maladies cardiovasculaires chroniques. Formation continue en France et Belgique.',
-    languages: ['Français', 'Arabe', 'Anglais'],
-    degrees: ['Médecine Générale - Université d\'Alger (2010)', 'Cardiologie - Université de Paris (2015)'],
-    availability: { days: ['Lundi', 'Mercredi', 'Vendredi', 'Samedi'], hours: '09:00 - 17:00' },
-    consultationType: ['Consultation pressentielle', 'Téléconsultation'],
-    insurance: 'CNAS, CASNOS, Privé'
   };
 
   if (loading) {
@@ -53,14 +49,6 @@ const DoctorProfile = () => {
   const price = doctorData.consultationPrice || doctorData.price || 4500;
   const experience = doctorData.experience || '12 ans';
   const about = doctorData.user?.bio || doctorData.about || 'Spécialisée en cardiologie générale et interventionnelle, avec une expertise particulière dans le traitement des maladies cardiovasculaires chroniques. Formation continue en France et Belgique.';
-  const languages = doctorData.user?.languages || doctorData.languages || ['Français', 'Arabe', 'Anglais'];
-  const degrees = doctorData.user?.degrees || doctorData.degrees || [
-    'Médecine Générale - Université d\'Alger (2010)',
-    'Cardiologie - Université de Paris (2015)'
-  ];
-  const availability = doctorData.availability || { days: ['Lundi', 'Mercredi', 'Vendredi', 'Samedi'], hours: '09:00 - 17:00' };
-  const consultationType = doctorData.consultationType || ['Consultation pressentielle', 'Téléconsultation'];
-  const insurance = doctorData.insurance || 'CNAS, CASNOS, Privé';
 
   const fullName = `${firstName} ${lastName}`.trim();
   return (
@@ -70,8 +58,12 @@ const DoctorProfile = () => {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:gap-8">
             <div className="flex-shrink-0">
-              <div className="h-28 w-28 rounded-full bg-gradient-to-br from-blue-300 to-blue-500 flex items-center justify-center text-5xl font-bold text-white shadow-lg">
-                {fullName.charAt(0)}
+              <div className="h-28 w-28 rounded-full overflow-hidden shadow-lg bg-gradient-to-br from-blue-300 to-blue-500 flex items-center justify-center">
+                {doctorData.photo ? (
+                  <img src={doctorData.photo} alt={fullName} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="text-5xl font-bold text-white">{fullName.charAt(0)}</div>
+                )}
               </div>
             </div>
             <div className="flex-1">
@@ -79,17 +71,17 @@ const DoctorProfile = () => {
               <h1 className="mt-2 text-4xl font-bold">{fullName || 'Dr. Yasmine Ben Fatima'}</h1>
               <p className="mt-2 text-lg text-blue-100">{specialty}</p>
               <div className="mt-4 flex flex-wrap items-center gap-4">
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-4 py-2 font-semibold">
-                  ⭐ {rating} ({reviews} avis)
-                </span>
-                <span className="rounded-full bg-white/20 px-4 py-2">{experience} d'expérience</span>
                 <span className="rounded-full bg-white/20 px-4 py-2">📍 {wilaya}</span>
               </div>
             </div>
             <div className="flex-shrink-0">
-              <Link to={`/booking/${id}`} className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-8 py-3 font-semibold text-white transition hover:bg-blue-600 text-lg">
+              <button
+                type="button"
+                onClick={() => navigate(`/booking/${id}`)}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-8 py-3 font-semibold text-white transition hover:bg-blue-600 text-lg"
+              >
                 🗓️ Réserver maintenant
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -100,115 +92,71 @@ const DoctorProfile = () => {
         <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
           {/* Main Info */}
           <div className="space-y-8">
+
             {/* About */}
             <div className="rounded-3xl bg-white p-8 shadow-md border border-slate-200">
-              <h2 className="text-2xl font-bold text-slate-900">À propos</h2>
+              <h2 className="text-2xl font-bold text-slate-900">Présentation</h2>
               <p className="mt-4 leading-relaxed text-slate-600">{about}</p>
             </div>
 
-            {/* Qualifications */}
-            <div className="rounded-3xl bg-white p-8 shadow-md border border-slate-200">
-              <h2 className="text-2xl font-bold text-slate-900">Diplômes & Certifications</h2>
-              <ul className="mt-6 space-y-3">
-                {degrees.map((degree, idx) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <span className="text-blue-600 text-lg">🎓</span>
-                    <span className="text-slate-700">{degree}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Qualifications removed by request */}
 
-            {/* Availability */}
-            <div className="rounded-3xl bg-white p-8 shadow-md border border-slate-200">
-              <h2 className="text-2xl font-bold text-slate-900">Disponibilités</h2>
-              <div className="mt-6 grid gap-6 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm font-semibold text-slate-600">Jours</p>
-                  <div className="mt-2 space-y-2">
-                    {availability.days.map((day) => (
-                      <span key={day} className="inline-flex rounded-full bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 border border-blue-200">
-                        {day}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-600">Horaires</p>
-                  <p className="mt-2 rounded-lg bg-blue-50 px-4 py-2 text-sm text-slate-700 border border-blue-200">
-                    {availability.hours}
-                  </p>
-                </div>
-              </div>
-            </div>
+            {/* Public reçu removed by request */}
 
-            {/* Consultation Types */}
-            <div className="rounded-3xl bg-white p-8 shadow-md border border-slate-200">
-              <h2 className="text-2xl font-bold text-slate-900">Types de consultations</h2>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                {consultationType.map((type) => (
-                  <div key={type} className="rounded-lg bg-slate-50 p-4 border border-slate-200">
-                    <p className="text-slate-700 font-medium">{type}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Tarifs et remboursement removed by request */}
+
+            {/* Moyens de paiement removed by request */}
+
+            {/* Disponibilités removed by request */}
+
+            {/* Types de consultations removed by request */}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Pricing Card */}
-            <div className="rounded-3xl bg-gradient-to-br from-blue-50 to-blue-100 p-8 shadow-md border border-blue-200 sticky top-20">
-              <p className="text-xs font-semibold uppercase text-blue-600 tracking-wide">Tarif de consultation</p>
-              <p className="mt-4 text-4xl font-bold text-slate-900">{price} DA</p>
-              <p className="mt-2 text-sm text-slate-600">Consultation pressentielle ou téléconsultation</p>
-              <Link to={`/booking/${id}`} className="mt-6 block w-full rounded-lg bg-blue-600 px-6 py-3 text-center font-semibold text-white transition hover:bg-blue-700">
-                Réserver une consultation
-              </Link>
+            {/* Addresses moved here per request */}
+            <div className="rounded-3xl bg-white p-6 shadow-md border border-slate-200">
+              <div className="flex items-start justify-between">
+                <h2 className="text-base font-semibold text-slate-900">Adresses</h2>
+                <a href="#addresses" className="text-sm text-blue-600">Voir plus</a>
+              </div>
+              <div className="mt-4 text-sm text-slate-700">
+                {doctorData.addresses && doctorData.addresses.length > 0 ? (
+                  doctorData.addresses.map((addr, idx) => (
+                    <div key={idx} className="mb-3">
+                      <div className="font-medium">{addr.name || addr.location || 'KAP CARE ESPACE SANTE'}</div>
+                      <div className="text-xs text-slate-500">{addr.street || addr.address || '385 Avenue de l\'Argonne'}</div>
+                      <div className="text-xs text-slate-500">{addr.city || addr.wilaya || '33700 Mérignac'}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div>Adresse du cabinet non renseignée.</div>
+                )}
+              </div>
             </div>
+            {/* Summary / Pricing Card removed by request */}
 
             {/* Quick Info */}
-            <div className="rounded-3xl bg-white p-6 shadow-md border border-slate-200 space-y-4">
-              <div>
-                <p className="text-xs font-semibold uppercase text-slate-600 tracking-wide">Langues</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {languages.map((lang) => (
-                    <span key={lang} className="text-sm bg-slate-100 text-slate-700 px-3 py-1 rounded-full">
-                      {lang}
-                    </span>
-                  ))}
-                </div>
-              </div>
+            {/* Langues, Assurances acceptées, Localisation removed by request */}
 
-              <div className="border-t border-slate-200 pt-4">
-                <p className="text-xs font-semibold uppercase text-slate-600 tracking-wide">Assurances acceptées</p>
-                <p className="mt-2 text-sm text-slate-700">{insurance}</p>
-              </div>
-
-              <div className="border-t border-slate-200 pt-4">
-                <p className="text-xs font-semibold uppercase text-slate-600 tracking-wide">Localisation</p>
-                <p className="mt-2 text-sm text-slate-700">📍 {wilaya}, Algérie</p>
-              </div>
+            {/* Horaires d'ouverture */}
+            <div className="rounded-3xl bg-white p-6 shadow-md border border-slate-200">
+              <h3 className="font-semibold text-slate-900">Horaires d'ouverture</h3>
+              <ol className="mt-3 text-sm text-slate-600 list-decimal list-inside space-y-1">
+                <li>lundi: 08h15 - 17h30</li>
+                <li>mardi: 08h15 - 17h30</li>
+                <li>mercredi: 08h15 - 13h00</li>
+                <li>jeudi: 08h15 - 17h30</li>
+                <li>vendredi: Fermé</li>
+                <li>samedi: Fermé</li>
+                <li>dimanche: Fermé</li>
+              </ol>
             </div>
+
+            {/* Horaires et coordonnées removed by request */}
 
             {/* Reviews Preview */}
-            <div className="rounded-3xl bg-white p-6 shadow-md border border-slate-200">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-slate-900">Avis patients</h3>
-                <span className="text-2xl font-bold text-amber-500">{rating}</span>
-              </div>
-              <p className="mt-1 text-sm text-slate-600">{reviews} avis vérifiés</p>
-              <div className="mt-4 space-y-2">
-                {[5, 4.5, 5].map((rate, idx) => (
-                  <div key={idx} className="text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="text-amber-400">{'⭐'.repeat(Math.floor(rate))}</span>
-                      <span className="text-slate-600">Excellent service</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Avis patients removed by request */}
           </div>
         </div>
       </section>

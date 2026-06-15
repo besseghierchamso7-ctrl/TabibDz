@@ -68,4 +68,18 @@ const listWilayas = async () => {
   return Wilaya.find().sort({ name: 1 });
 };
 
-module.exports = { getDashboardStats, manageSpecialty, manageWilaya, listUsers, listDoctorsAdmin, listAppointmentsAdmin, listReviewsAdmin, listSpecialties, listWilayas };
+const removePatient = async (patientId) => {
+  const PatientModel = require('../models/Patient');
+  const patient = await PatientModel.findById(patientId);
+  if (!patient) throw new Error('Patient not found');
+  const userId = patient.user;
+  // remove related appointments
+  await Appointment.deleteMany({ patient: patientId });
+  // remove patient document
+  await PatientModel.findByIdAndDelete(patientId);
+  // remove user account
+  await User.findByIdAndDelete(userId);
+  return { success: true };
+};
+
+module.exports = { getDashboardStats, manageSpecialty, manageWilaya, listUsers, listDoctorsAdmin, listAppointmentsAdmin, listReviewsAdmin, listSpecialties, listWilayas, removePatient };

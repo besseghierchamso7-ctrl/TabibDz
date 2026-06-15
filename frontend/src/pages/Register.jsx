@@ -1,9 +1,11 @@
-import { useState, useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
+import apiClient from '../api/apiClient';
 
 const Register = () => {
-  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '', role: 'patient' });
+  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '', role: 'patient', specialty: '' });
+  const [specialties, setSpecialties] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -11,8 +13,26 @@ const Register = () => {
   const { register } = useContext(AuthContext);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const nextFormData = { ...formData, [name]: value };
+    if (name === 'role' && value !== 'doctor') {
+      nextFormData.specialty = '';
+    }
+    setFormData(nextFormData);
   };
+
+  useEffect(() => {
+    const fetchSpecialties = async () => {
+      try {
+        const response = await apiClient.get('/specialties');
+        setSpecialties(response.data || []);
+      } catch (err) {
+        console.error('Erreur en chargeant les spécialités:', err);
+      }
+    };
+
+    fetchSpecialties();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,7 +55,8 @@ const Register = () => {
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
-        role: formData.role
+        role: formData.role,
+        specialty: formData.role === 'doctor' ? formData.specialty : undefined
       });
       navigate('/login', {
         state: {
@@ -156,6 +177,24 @@ const Register = () => {
                 <option value="doctor">Médecin</option>
               </select>
             </div>
+
+            {formData.role === 'doctor' && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700">Spécialité</label>
+                <select
+                  name="specialty"
+                  value={formData.specialty}
+                  onChange={handleChange}
+                  required
+                  className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-blue-500 focus:outline-none transition text-sm"
+                >
+                  <option value="">Sélectionnez votre spécialité</option>
+                  {specialties.map((spec) => (
+                    <option key={spec._id} value={spec._id}>{spec.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="flex items-center">
               <input type="checkbox" id="agree" required className="h-4 w-4 rounded border-slate-300 accent-blue-600" />

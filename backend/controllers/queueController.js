@@ -1,6 +1,19 @@
 const QueueService = require('../services/queueService');
 const Patient = require('../models/Patient');
+const Doctor = require('../models/Doctor');
 const socketService = require('../services/socketService');
+
+const resolveDoctorId = async (doctorId, user) => {
+  if (user?.role !== 'doctor') return doctorId;
+  const doctorProfile = await Doctor.findOne({ user: user._id });
+  if (!doctorProfile) {
+    throw new Error('Doctor profile not found');
+  }
+  if (!doctorId || doctorId === user._id.toString() || doctorId === doctorProfile._id.toString()) {
+    return doctorProfile._id.toString();
+  }
+  throw new Error('Forbidden: cannot access another doctor queue');
+};
 
 exports.joinQueue = async (req, res, next) => {
   try {
@@ -35,12 +48,22 @@ exports.getQueueForClinic = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+exports.getDoctorQueueSummary = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+    const resolvedDoctorId = await resolveDoctorId(doctorId, req.user);
+    const summary = await QueueService.getDoctorQueueSummary(resolvedDoctorId);
+    res.json(summary);
+  } catch (err) { next(err); }
+};
+
 exports.callNextPatient = async (req, res, next) => {
   try {
     const { doctorId, clinicId } = req.body;
-    const result = await QueueService.callNextPatient(doctorId, clinicId);
+    const resolvedDoctorId = await resolveDoctorId(doctorId, req.user);
+    const result = await QueueService.callNextPatient(resolvedDoctorId, clinicId);
       // notify clinic and specific patient
-      const room = `doctor_${doctorId}_clinic_${clinicId || 'default'}`;
+      const room = `doctor_${resolvedDoctorId}_clinic_${clinicId || 'default'}`;
       socketService.emit('queue:called', room, result);
       if (result?.calledPatient?.patientId) {
         socketService.emit('queue:called:patient', `patient_${result.calledPatient.patientId}`, result.calledPatient);
@@ -52,8 +75,9 @@ exports.callNextPatient = async (req, res, next) => {
 exports.markAsServed = async (req, res, next) => {
   try {
     const { doctorId, clinicId, patientQueueId } = req.body;
-    const result = await QueueService.markAsServed(doctorId, clinicId, patientQueueId);
-      const room = `doctor_${doctorId}_clinic_${clinicId || 'default'}`;
+    const resolvedDoctorId = await resolveDoctorId(doctorId, req.user);
+    const result = await QueueService.markAsServed(resolvedDoctorId, clinicId, patientQueueId);
+      const room = `doctor_${resolvedDoctorId}_clinic_${clinicId || 'default'}`;
       socketService.emit('queue:served', room, result);
       res.json(result);
   } catch (err) { next(err); }
@@ -62,8 +86,9 @@ exports.markAsServed = async (req, res, next) => {
 exports.getQueueAnalytics = async (req, res, next) => {
   try {
     const { doctorId } = req.params;
+    const resolvedDoctorId = await resolveDoctorId(doctorId, req.user);
     const { startDate, endDate } = req.query;
-    const stats = await QueueService.getQueueAnalytics(doctorId, new Date(startDate), new Date(endDate));
+    const stats = await QueueService.getQueueAnalytics(resolvedDoctorId, new Date(startDate), new Date(endDate));
     res.json(stats);
   } catch (err) { next(err); }
 };

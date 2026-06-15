@@ -90,7 +90,7 @@ app.get('/api/stats/public', async (req, res, next) => {
 
     const [patientCount, doctorCount, appointmentCount] = await Promise.all([
       User.countDocuments({ role: 'patient' }),
-      Doctor.countDocuments({ isVerified: true }),
+      Doctor.countDocuments({ status: 'verified' }),
       Appointment.countDocuments({ status: 'confirmed' })
     ]);
 

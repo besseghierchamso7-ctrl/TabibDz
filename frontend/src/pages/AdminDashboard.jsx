@@ -1,28 +1,21 @@
 import { useState, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { io } from 'socket.io-client';
 import { AuthContext } from '../contexts/AuthContext';
+import PatientCard from '../components/PatientCard';
 
 const AdminDashboard = () => {
-  const { user, updateProfile } = useContext(AuthContext);
+  const { user, token } = useContext(AuthContext);
   const [showSpecialtyForm, setShowSpecialtyForm] = useState(false);
   const [specialtyName, setSpecialtyName] = useState('');
   const [specialtyDescription, setSpecialtyDescription] = useState('');
   const [createStatus, setCreateStatus] = useState('');
-  const [profileStatus, setProfileStatus] = useState('');
-  const [profileFields, setProfileFields] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    gender: '',
-    avatar: ''
-  });
   const [stats, setStats] = useState({
     patientsCount: 0,
     doctorsCount: 0,
     appointmentsCount: 0,
+    confirmedCount: 0,
+    pendingCount: 0,
     revenue: 0,
     reviewsCount: 0
   });
@@ -31,19 +24,7 @@ const AdminDashboard = () => {
   const [recentAppointments, setRecentAppointments] = useState([]);
 
   useEffect(() => {
-    if (user) {
-      setProfileFields({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        gender: user.gender || '',
-        avatar: user.avatar || ''
-      });
-    }
-  }, [user]);
-
-  useEffect(() => {
+    if (!token) return; // wait for auth token
     const fetchDashboardData = async () => {
       setStatsLoading(true);
       try {
@@ -58,6 +39,8 @@ const AdminDashboard = () => {
           patientsCount: dashboardData.patientsCount || 0,
           doctorsCount: dashboardData.doctorsCount || 0,
           appointmentsCount: dashboardData.appointmentsCount || 0,
+          confirmedCount: dashboardData.confirmedCount || 0,
+          pendingCount: dashboardData.pendingCount || 0,
           revenue: dashboardData.revenue || 0,
           reviewsCount: dashboardData.reviewsCount || 0
         });
@@ -73,12 +56,13 @@ const AdminDashboard = () => {
           .sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt))
           .slice(0, 3)
           .map((appointment) => ({
-            patient: appointment.patient?.user ? `${appointment.patient.user.firstName} ${appointment.patient.user.lastName}` : appointment.patient?.name || 'Patient',
-            doctor: appointment.doctor?.user ? `Dr. ${appointment.doctor.user.firstName} ${appointment.doctor.user.lastName}` : appointment.doctor?.name || 'Médecin',
-            date: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : 'N/A',
-            time: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A',
-            status: appointment.status === 'confirmed' ? 'Confirmé' : appointment.status === 'pending' ? 'En attente' : appointment.status === 'cancelled' ? 'Annulé' : appointment.status === 'completed' ? 'Terminé' : appointment.status
-          }));
+              patientId: appointment.patient?._id || appointment.patient?.id || null,
+              patient: appointment.patient?.user ? `${appointment.patient.user.firstName} ${appointment.patient.user.lastName}` : appointment.patient?.name || 'Patient',
+              doctor: appointment.doctor?.user ? `Dr. ${appointment.doctor.user.firstName} ${appointment.doctor.user.lastName}` : appointment.doctor?.name || 'Médecin',
+              date: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : 'N/A',
+              time: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+              status: appointment.status === 'confirmed' ? 'Confirmé' : appointment.status === 'pending' ? 'En attente' : appointment.status === 'cancelled' ? 'Annulé' : appointment.status === 'completed' ? 'Terminé' : appointment.status
+            }));
 
         setRecentAppointments(recent);
       } catch (error) {
@@ -89,16 +73,16 @@ const AdminDashboard = () => {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [token]);
 
-  const { token } = useContext(AuthContext);
   useEffect(() => {
-    const baseApi = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/,'') : window.location.origin.replace(':5173',':5000');
+    const baseApi = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/,'') : 'http://localhost:10000';
     const socket = io(baseApi, { path: '/socket.io', auth: { token } });
 
     socket.on('appointment:created', (appointment) => {
       setStats((s) => ({ ...s, appointmentsCount: (s.appointmentsCount || 0) + 1, pendingCount: (s.pendingCount || 0) + (appointment.status === 'pending' ? 1 : 0), confirmedCount: (s.confirmedCount || 0) + (appointment.status === 'confirmed' ? 1 : 0) }));
       setRecentAppointments((r) => [{
+        patientId: appointment.patient?._id || appointment.patient?.id || null,
         patient: appointment.patient?.user ? `${appointment.patient.user.firstName} ${appointment.patient.user.lastName}` : appointment.patient?.name || 'Patient',
         doctor: appointment.doctor?.user ? `Dr. ${appointment.doctor.user.firstName} ${appointment.doctor.user.lastName}` : appointment.doctor?.name || 'Médecin',
         date: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : 'N/A',
@@ -128,7 +112,8 @@ const AdminDashboard = () => {
         const mapped = r.map((it) => it);
         // prepend updated appointment
         const newEntry = {
-          patient: appointment.patient?.user ? `${appointment.patient.user.firstName} ${appointment.patient.user.lastName}` : appointment.patient?.name || 'Patient',
+            patientId: appointment.patient?._id || appointment.patient?.id || null,
+            patient: appointment.patient?.user ? `${appointment.patient.user.firstName} ${appointment.patient.user.lastName}` : appointment.patient?.name || 'Patient',
           doctor: appointment.doctor?.user ? `Dr. ${appointment.doctor.user.firstName} ${appointment.doctor.user.lastName}` : appointment.doctor?.name || 'Médecin',
           date: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : 'N/A',
           time: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A',
@@ -140,30 +125,6 @@ const AdminDashboard = () => {
 
     return () => socket.disconnect();
   }, [token]);
-
-  const handleProfileSubmit = async (event) => {
-    event.preventDefault();
-    setProfileStatus('Mise à jour en cours...');
-
-    try {
-      const updated = await updateProfile({
-        firstName: profileFields.firstName,
-        lastName: profileFields.lastName,
-        email: profileFields.email,
-        phone: profileFields.phone,
-        gender: profileFields.gender,
-        avatar: profileFields.avatar
-      });
-      setProfileFields((prev) => ({ ...prev, ...updated }));
-      setProfileStatus('Profil mis à jour avec succès');
-    } catch (error) {
-      setProfileStatus(error.message || 'Échec de la mise à jour du profil');
-    }
-  };
-
-  const handleProfileChange = (field, value) => {
-    setProfileFields((prev) => ({ ...prev, [field]: value }));
-  };
 
   const handleSpecialtySubmit = async (event) => {
     event.preventDefault();
@@ -184,10 +145,23 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeletePatient = async (patientId) => {
+    if (!patientId) return;
+    if (!confirm('Supprimer ce patient et toutes ses données ? Cette action est irréversible. Continuer ?')) return;
+    try {
+      await apiClient.delete(`/admin/patients/${patientId}`);
+      // remove from recent list
+      setRecentAppointments((r) => r.filter((it) => it.patientId !== patientId));
+      // adjust stats
+      setStats((s) => ({ ...s, patientsCount: Math.max(0, (s.patientsCount || 0) - 1) }));
+    } catch (error) {
+      console.error('Erreur suppression patient :', error);
+      alert('Erreur lors de la suppression du patient.');
+    }
+  };
+
   const metrics = [
     { label: 'Rendez-vous', value: statsLoading ? '...' : (stats.appointmentsCount || 0).toLocaleString('fr-FR'), note: 'Total des rendez-vous', color: 'bg-amber-100 text-amber-700' },
-    { label: 'Confirmés', value: statsLoading ? '...' : (stats.confirmedCount || 0).toLocaleString('fr-FR'), note: 'Rendez-vous confirmés', color: 'bg-emerald-100 text-emerald-700' },
-    { label: 'En attente', value: statsLoading ? '...' : (stats.pendingCount || 0).toLocaleString('fr-FR'), note: 'Rendez-vous en attente', color: 'bg-rose-100 text-rose-700' },
     { label: 'Médecins', value: statsLoading ? '...' : (stats.doctorsCount || 0).toLocaleString('fr-FR'), note: 'Médecins enregistrés', color: 'bg-sky-100 text-sky-700' }
   ];
 
@@ -201,93 +175,11 @@ const AdminDashboard = () => {
             <p className="mt-3 max-w-2xl text-slate-200">Analysez les performances, approuvez les médecins et suivez les rendez-vous en temps réel.</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link to="/profile" className="inline-flex items-center rounded-full bg-white/15 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/25">
-              👤 Mon profil
-            </Link>
             <button onClick={() => setShowSpecialtyForm(true)} className="rounded-full bg-white/15 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/25">Nouvelle spécialité</button>
             <button className="rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-900 transition hover:bg-slate-200">Rapport PDF</button>
           </div>
         </div>
       </div>
-
-      <section className="mb-8 rounded-[2rem] bg-white p-8 shadow-xl shadow-slate-200/40">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.4em] text-slate-500">Mon profil</p>
-            <h2 className="mt-2 text-2xl font-bold text-slate-900">Modifier mon profil administrateur</h2>
-            <p className="mt-2 text-sm text-slate-600">Mettez à jour vos informations personnelles et de contact.</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleProfileSubmit} className="mt-8 grid gap-6 lg:grid-cols-2">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">Prénom</label>
-            <input
-              value={profileFields.firstName}
-              onChange={(e) => handleProfileChange('firstName', e.target.value)}
-              required
-              className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">Nom</label>
-            <input
-              value={profileFields.lastName}
-              onChange={(e) => handleProfileChange('lastName', e.target.value)}
-              required
-              className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
-            <input
-              type="email"
-              value={profileFields.email}
-              onChange={(e) => handleProfileChange('email', e.target.value)}
-              required
-              className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">Téléphone</label>
-            <input
-              value={profileFields.phone}
-              onChange={(e) => handleProfileChange('phone', e.target.value)}
-              className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">Genre</label>
-            <select
-              value={profileFields.gender}
-              onChange={(e) => handleProfileChange('gender', e.target.value)}
-              className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
-            >
-              <option value="">Sélectionner</option>
-              <option value="male">Homme</option>
-              <option value="female">Femme</option>
-              <option value="other">Autre</option>
-            </select>
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">Avatar (URL)</label>
-            <input
-              value={profileFields.avatar}
-              onChange={(e) => handleProfileChange('avatar', e.target.value)}
-              className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
-              placeholder="https://..."
-            />
-          </div>
-          <div className="lg:col-span-2">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-slate-500">{profileStatus}</p>
-              <button type="submit" className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">
-                Enregistrer les modifications
-              </button>
-            </div>
-          </div>
-        </form>
-      </section>
 
       {showSpecialtyForm && (
         <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/50 px-4 py-6">
@@ -333,6 +225,7 @@ const AdminDashboard = () => {
       )}
 
       <section className="grid gap-6 xl:grid-cols-4">
+        <PatientCard count={stats.patientsCount} loading={statsLoading} />
         {metrics.map((item) => (
           <div key={item.label} className="rounded-3xl bg-white p-6 shadow-lg">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">{item.label}</p>
@@ -377,7 +270,12 @@ const AdminDashboard = () => {
                         {item.status}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-slate-700">Gérer</td>
+                    <td className="px-4 py-4 text-slate-700">
+                      <div className="flex gap-2">
+                        <button onClick={() => handleDeletePatient(item.patientId)} className="rounded-full bg-rose-600 px-3 py-1 text-xs font-semibold text-white hover:bg-rose-700">Supprimer</button>
+                        <button className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 hover:bg-slate-100">Gérer</button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -416,10 +314,10 @@ const AdminDashboard = () => {
           <div className="rounded-3xl bg-white p-6 shadow-lg">
             <h2 className="text-xl font-semibold text-slate-900">Activité récente</h2>
             <div className="mt-6 space-y-4 text-sm text-slate-600">
-              <p>• 12 nouveaux patients inscrits aujourd'hui.</p>
-              <p>• 4 rendez-vous confirmés en attente de paiement.</p>
-              <p>• 2 avis publiés pour les médecins.</p>
-              <p>• 1 médecin vérifié dans la matinée.</p>
+              <p>• {statsLoading ? '...' : (stats.patientsCount || 0).toLocaleString('fr-FR')} nouveaux patients inscrits aujourd'hui.</p>
+              <p>• {statsLoading ? '...' : (stats.confirmedCount || 0).toLocaleString('fr-FR')} rendez-vous confirmés.</p>
+              <p>• {statsLoading ? '...' : (stats.reviewsCount || 0).toLocaleString('fr-FR')} avis publiés pour les médecins.</p>
+              <p>• {statsLoading ? '...' : (stats.doctorsCount || 0).toLocaleString('fr-FR')} médecins enregistrés.</p>
             </div>
           </div>
         </div>

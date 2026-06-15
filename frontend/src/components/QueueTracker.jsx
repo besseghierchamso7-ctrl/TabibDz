@@ -19,7 +19,7 @@ const QueueTracker = ({ doctorId, appointmentId }) => {
     const fetchStatus = async () => {
       if (!joined || !doctorId) return;
       try {
-        const response = await apiClient.get(`/api/queues/status/${doctorId}`);
+        const response = await apiClient.get(`/queues/status/${doctorId}`);
         setQueueStatus(response.data);
       } catch (err) {
         console.error('Error fetching queue status:', err);
@@ -38,7 +38,7 @@ const QueueTracker = ({ doctorId, appointmentId }) => {
   useEffect(() => {
     if (!joined || !doctorId) return;
 
-    const baseApi = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/,'') : window.location.origin.replace(':5173',':5000');
+    const baseApi = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/,'') : 'http://localhost:10000';
     const token = localStorage.getItem('token');
     const socket = io(baseApi, { transports: ['websocket'], path: '/socket.io', auth: { token } });
     socketRef.current = socket;
@@ -50,7 +50,7 @@ const QueueTracker = ({ doctorId, appointmentId }) => {
 
     const refresh = async () => {
       try {
-        const res = await apiClient.get(`/api/queues/status/${doctorId}`);
+        const res = await apiClient.get(`/queues/status/${doctorId}`);
         setQueueStatus(res.data);
       } catch (err) { console.error(err); }
     };

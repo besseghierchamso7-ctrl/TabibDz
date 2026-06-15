@@ -27,11 +27,22 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 };
 
 function AppRoutes() {
+  const HomeRedirect = () => {
+    const { user, loading } = useContext(AuthContext);
+    if (loading) return <div className="flex items-center justify-center min-h-screen">Chargement...</div>;
+    if (user) {
+      if (user.role === 'doctor') return <Navigate to="/dashboard/doctor" />;
+      if (user.role === 'patient') return <Navigate to="/dashboard/patient" />;
+      if (user.role === 'admin') return <Navigate to="/dashboard/admin" />;
+    }
+    return <Layout><Home /></Layout>;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <Routes>
         {/* Public Pages with Layout */}
-        <Route element={<Layout><Home /></Layout>} path="/" />
+        <Route element={<HomeRedirect />} path="/" />
         <Route element={<Layout><SearchDoctors /></Layout>} path="/search" />
         <Route element={<Layout><DoctorProfile /></Layout>} path="/doctor/:id" />
         <Route element={<Layout><Contact /></Layout>} path="/contact" />

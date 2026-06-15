@@ -181,14 +181,7 @@ const SearchDoctors = () => {
                           <div className="flex-1">
                             <h3 className="text-lg font-semibold text-slate-900">Dr. {firstName} {lastName}</h3>
                             <p className="mt-1 text-sm text-slate-600">{specialtyName}</p>
-                            <p className="mt-1 text-xs text-slate-500">{doctor.experience || 0} ans d'expérience</p>
                           </div>
-                        </div>
-
-                        <div className="mt-4 flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700">
-                            ⭐ {rating.toFixed(1)}
-                          </span>
                         </div>
 
                         <div className="mt-4 flex items-center justify-between">

@@ -83,8 +83,7 @@ class QueueService {
     }
   }
 
-  // Call next patient
-  static async callNextPatient(doctorId, clinicId) {
+  static async getDoctorQueueSummary(doctorId) {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -93,9 +92,58 @@ class QueueService {
 
       const queue = await Queue.findOne({
         doctor: doctorId,
-        clinic: clinicId,
+        status: 'open',
         date: { $gte: today, $lt: tomorrow }
       });
+
+      if (!queue) {
+        return {
+          hasQueue: false,
+          message: 'Aucune file d\'attente active',
+          currentNumber: 0,
+          totalInQueue: 0,
+          remainingPatients: 0,
+          nextQueueNumber: null,
+          estimatedWaitTime: 0,
+          queueStatus: 'closed'
+        };
+      }
+
+      const waitingEntries = queue.entries.filter(e => e.status === 'waiting');
+      const nextEntry = waitingEntries[0];
+      const remainingPatients = waitingEntries.length;
+      const estimatedWaitTime = remainingPatients * 15;
+
+      return {
+        hasQueue: true,
+        currentNumber: queue.currentNumber,
+        totalInQueue: remainingPatients,
+        remainingPatients,
+        nextQueueNumber: nextEntry?.queueNumber || null,
+        estimatedWaitTime,
+        queueStatus: queue.status,
+        clinic: queue.clinic
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Call next patient
+  static async callNextPatient(doctorId, clinicId) {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const query = {
+        doctor: doctorId,
+        date: { $gte: today, $lt: tomorrow }
+      };
+      if (clinicId) query.clinic = clinicId;
+
+      const queue = await Queue.findOne(query);
 
       if (!queue) throw new Error('Queue not found');
 

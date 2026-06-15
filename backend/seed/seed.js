@@ -31,9 +31,26 @@ const importData = async () => {
 
     const specialties = await Specialty.insertMany([
       { name: 'Médecine Générale' },
+      { name: 'Urologie' },
+      { name: 'Pneumologie' },
+      { name: 'Gastro-entérologie' },
+      { name: 'Psychiatrie' },
+      { name: 'Psychologie' },
+      { name: 'Rhumatologie' },
+      { name: 'Cardiologie' },
       { name: 'Dermatologie' },
+      { name: 'Neurologie' },
+      { name: 'Endocrinologie' },
+      { name: 'Gynécologie-Obstétrique' },
       { name: 'Pédiatrie' },
-      { name: 'Cardiologie' }
+      { name: 'Ophtalmologie' },
+      { name: 'ORL (Oto-rhino-laryngologie)' },
+      { name: 'Orthopédie-Traumatologie' },
+      { name: 'Néphrologie' },
+      { name: 'Oncologie' },
+      { name: 'Hématologie' },
+      { name: 'Infectiologie' },
+      { name: 'Médecine Interne' }
     ]);
 
     const wilayas = await Wilaya.insertMany([

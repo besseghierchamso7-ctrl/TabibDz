@@ -44,18 +44,26 @@ async function run() {
   doctorSocket.on('waitingList:offer', (payload) => {
     console.log('doctor received offer', payload);
   });
+  doctorSocket.on('waitingList:offersCreated', (payload) => {
+    console.log('doctor received offersCreated', payload);
+  });
 
   // wait for clients to connect
   await new Promise((r) => setTimeout(r, 1000));
+
+  // join the clinic-specific doctor room and make sure compound room emits are handled
+  doctorSocket.emit('joinRoom', 'doctor_doctor1_clinic_default');
+  await new Promise((r) => setTimeout(r, 300));
 
   // emit an offer to patient_patient1 room
   console.log('Emitting offer to patient_patient1');
   const emitted = await socketService.emit('waitingList:offer', 'patient_patient1', { patientId: 'patient1', waitingListId: 'wl1', offeredSlot: '2026-06-20 10:00' });
   console.log('Emit result:', emitted);
 
-  // emit to doctor room
-  console.log('Emitting offer to doctor_doctor1');
-  await socketService.emit('waitingList:offer', 'doctor_doctor1', { doctorId: 'doctor1', waitingListId: 'wl1' });
+  // emit to doctor clinic room via compound room pattern
+  console.log('Emitting waitingList:offersCreated to doctor_doctor1_clinic_default');
+  const emittedDoctorRoom = await socketService.emit('waitingList:offersCreated', 'doctor_doctor1_clinic_default', { count: 1 });
+  console.log('Emit result for compound doctor room:', emittedDoctorRoom);
 
   // wait a bit then cleanup
   setTimeout(() => {

@@ -8,8 +8,7 @@ const Profile = () => {
     lastName: '',
     email: '',
     phone: '',
-    gender: '',
-    avatar: ''
+    gender: ''
   });
   const [status, setStatus] = useState('');
   const [saving, setSaving] = useState(false);
@@ -21,8 +20,7 @@ const Profile = () => {
         lastName: user.lastName || '',
         email: user.email || '',
         phone: user.phone || '',
-        gender: user.gender || '',
-        avatar: user.avatar || ''
+        gender: user.gender || ''
       });
     }
   }, [user]);
@@ -107,16 +105,6 @@ const Profile = () => {
                 <option value="other">Autre</option>
               </select>
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">Avatar (URL)</label>
-              <input
-                value={profileFields.avatar}
-                onChange={(e) => handleChange('avatar', e.target.value)}
-                className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
-                placeholder="https://..."
-              />
-            </div>
-
             <div className="lg:col-span-2">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-slate-500">{status}</p>

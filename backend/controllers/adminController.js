@@ -1,4 +1,4 @@
-const { getDashboardStats, manageSpecialty, manageWilaya, listUsers, listDoctorsAdmin, listAppointmentsAdmin, listReviewsAdmin, listSpecialties, listWilayas } = require('../services/adminService');
+const { getDashboardStats, manageSpecialty, manageWilaya, listUsers, listDoctorsAdmin, listAppointmentsAdmin, listReviewsAdmin, listSpecialties, listWilayas, removePatient } = require('../services/adminService');
 
 const dashboard = async (req, res, next) => {
   try {
@@ -54,6 +54,15 @@ const patients = async (req, res, next) => {
   }
 };
 
+const deletePatient = async (req, res, next) => {
+  try {
+    const result = await removePatient(req.params.id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const doctors = async (req, res, next) => {
   try {
     const doctors = await listDoctorsAdmin();
@@ -81,4 +90,4 @@ const reviews = async (req, res, next) => {
   }
 };
 
-module.exports = { dashboard, createSpecialty, createWilaya, listSpecialties: getSpecialties, listWilayas: getWilayas, patients, doctors, appointments, reviews };
+module.exports = { dashboard, createSpecialty, createWilaya, listSpecialties: getSpecialties, listWilayas: getWilayas, patients, doctors, appointments, reviews, deletePatient };

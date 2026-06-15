@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import apiClient from '../api/apiClient';
+import { AuthContext } from '../contexts/AuthContext';
 
 const Home = () => {
+  const { user } = useContext(AuthContext);
   const [stats, setStats] = useState({ patients: 0, doctors: 0, appointments: 0 });
   const [specialties, setSpecialties] = useState([]);
   const [wilayas, setWilayas] = useState([]);
@@ -55,7 +57,9 @@ const Home = () => {
             <p className="mt-6 max-w-2xl text-lg text-slate-600">Tabib DZ est la plateforme leader pour trouver un médecin vérifié, réserver une consultation et gérer vos rendez-vous en toute simplicité.</p>
             <div className="mt-10 flex flex-wrap gap-4">
               <Link to="/search" className="rounded-full bg-blue-600 px-8 py-3 font-semibold text-white shadow-lg transition hover:bg-blue-700 hover:shadow-xl">Chercher un médecin</Link>
-              <Link to="/register" className="rounded-full border-2 border-blue-600 px-8 py-3 font-semibold text-blue-600 transition hover:bg-blue-50">Créer un compte</Link>
+              {!user && (
+                <Link to="/register" className="rounded-full border-2 border-blue-600 px-8 py-3 font-semibold text-blue-600 transition hover:bg-blue-50">Créer un compte</Link>
+              )}
             </div>
           </div>
           <div className="rounded-[2rem] bg-gradient-to-br from-blue-50 to-blue-100 p-10 shadow-lg">
@@ -180,7 +184,9 @@ const Home = () => {
             <p className="mt-4 text-lg text-blue-100">Rejoignez des milliers de patients en Algérie qui font confiance à Tabib DZ.</p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link to="/search" className="rounded-full bg-white px-8 py-3 font-semibold text-blue-600 transition hover:bg-blue-50">Chercher un médecin</Link>
-              <Link to="/register" className="rounded-full border-2 border-white px-8 py-3 font-semibold text-white transition hover:bg-white/10">S'inscrire</Link>
+              {!user && (
+                <Link to="/register" className="rounded-full border-2 border-white px-8 py-3 font-semibold text-white transition hover:bg-white/10">S'inscrire</Link>
+              )}
             </div>
           </div>
         </div>

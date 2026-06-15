@@ -24,7 +24,17 @@ const createAppointment = async (req, res, next) => {
 
 const getAllAppointments = async (req, res, next) => {
   try {
-    const appointments = await getAppointments(req.query, { skip: Number(req.query.skip) || 0, limit: Number(req.query.limit) || 50 });
+    const filters = { ...req.query };
+
+    if (req.user.role === 'doctor') {
+      const doctorProfile = await Doctor.findOne({ user: req.user._id });
+      if (!doctorProfile) {
+        return res.status(404).json({ message: 'Doctor profile not found' });
+      }
+      filters.doctor = doctorProfile._id.toString();
+    }
+
+    const appointments = await getAppointments(filters, { skip: Number(req.query.skip) || 0, limit: Number(req.query.limit) || 50 });
     res.json(appointments);
   } catch (error) {
     next(error);

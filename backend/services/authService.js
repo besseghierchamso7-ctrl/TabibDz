@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Doctor = require('../models/Doctor');
 const { generateToken, generateRefreshToken } = require('../utils/token');
 const { sendEmail } = require('../config/mail');
 
@@ -10,12 +11,20 @@ const createApiError = (message, statusCode = 400) => {
   return error;
 };
 
-const sanitizeUser = (user) => {
+const sanitizeUser = async (user) => {
   const userObject = user.toObject ? user.toObject() : { ...user };
   delete userObject.password;
   delete userObject.refreshToken;
   delete userObject.resetPasswordToken;
   delete userObject.resetPasswordExpires;
+
+  if (userObject.role === 'doctor') {
+    const doctorProfile = await Doctor.findOne({ user: userObject._id }).select('_id');
+    if (doctorProfile) {
+      userObject.doctorProfileId = doctorProfile._id.toString();
+    }
+  }
+
   return userObject;
 };
 
@@ -47,7 +56,7 @@ const register = async (data) => {
   user.refreshToken = refreshToken;
   await user.save();
   await sendRegistrationEmail(user);
-  return { user: sanitizeUser(user), token, refreshToken };
+  return { user: await sanitizeUser(user), token, refreshToken };
 };
 
 const login = async (email, password) => {
@@ -55,11 +64,19 @@ const login = async (email, password) => {
   if (!user || !(await user.matchPassword(password))) {
     throw createApiError('Invalid credentials', 401);
   }
+
+  if (user.role === 'doctor') {
+    const doctorProfile = await Doctor.findOne({ user: user._id }).select('status');
+    if (!doctorProfile || doctorProfile.status !== 'verified') {
+      throw createApiError('Doctor account pending approval', 403);
+    }
+  }
+
   const token = generateToken(user);
   const refreshToken = generateRefreshToken(user);
   user.refreshToken = refreshToken;
   await user.save();
-  return { user: sanitizeUser(user), token, refreshToken };
+  return { user: await sanitizeUser(user), token, refreshToken };
 };
 
 const refreshAuthToken = async (token) => {

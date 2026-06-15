@@ -5,34 +5,19 @@ import { io } from 'socket.io-client';
 import { AuthContext } from '../contexts/AuthContext';
 
 const PatientDashboard = () => {
+  const { user } = useContext(AuthContext);
   const [appointments, setAppointments] = useState([]);
-  const [stats, setStats] = useState({ total: 0, confirmed: 0, pending: 0, doctors: 0 });
   const [loading, setLoading] = useState(true);
 
-  const deriveStats = (list) => {
-    const confirmed = list.filter(a => a.status === 'confirmed').length;
-    const pending = list.filter(a => a.status === 'pending').length;
-    const doctorCount = new Set(list.map(a => a.doctor?._id || a.doctorId)).size;
-    return {
-      total: list.length,
-      confirmed,
-      pending,
-      doctors: doctorCount
-    };
-  };
 
   const handleCancelAppointment = async (appointmentId) => {
     try {
       await apiClient.post(`/appointments/${appointmentId}/cancel`);
-      setAppointments((prev) => {
-        const updated = prev.map((apt) => apt._id === appointmentId ? { ...apt, status: 'cancelled' } : apt);
-        setStats(deriveStats(updated));
-        return updated;
-      });
+      setAppointments((prev) => prev.map((apt) => apt._id === appointmentId ? { ...apt, status: 'cancelled' } : apt));
     } catch (err) {
       console.error('Error cancelling appointment:', err);
     }
-  };
+  }; 
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -40,7 +25,6 @@ const PatientDashboard = () => {
         const response = await apiClient.get('/appointments');
         const data = response.data || [];
         setAppointments(data);
-        setStats(deriveStats(data));
       } catch (err) {
         console.error('Error fetching appointments:', err);
       } finally {
@@ -51,7 +35,7 @@ const PatientDashboard = () => {
     fetchAppointments();
     // setup socket for live updates
     const token = localStorage.getItem('token');
-    const baseApi = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/,'') : window.location.origin.replace(':5173',':5000');
+    const baseApi = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/,'') : 'http://localhost:10000';
     const socket = io(baseApi, { path: '/socket.io', auth: { token } });
     socket.on('appointment:created', fetchAppointments);
     socket.on('appointment:updated', fetchAppointments);
@@ -70,37 +54,19 @@ const PatientDashboard = () => {
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-slate-900">Tableau de bord patient</h1>
           <p className="mt-2 text-slate-600">Gérez vos rendez-vous et consultez vos informations</p>
-          <div className="mt-4">
-            <Link to="/profile" className="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
-              👤 Mon profil
-            </Link>
-          </div>
+          {(!user?.firstName || !user?.lastName || !user?.phone || !user?.gender) && (
+            <div className="mt-4">
+              <Link to="/profile" className="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+                👤 Mon profil
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
       {/* Main Content */}
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Stats */}
-        <div className="grid gap-6 md:grid-cols-4 mb-8">
-          <div className="rounded-2xl bg-white p-6 shadow-md border border-slate-200">
-            <p className="text-sm font-semibold text-slate-600 uppercase">Rendez-vous</p>
-            <p className="mt-2 text-3xl font-bold text-slate-900">{stats.total}</p>
-          </div>
-          <div className="rounded-2xl bg-white p-6 shadow-md border border-slate-200">
-            <p className="text-sm font-semibold text-slate-600 uppercase">Confirmés</p>
-            <p className="mt-2 text-3xl font-bold text-emerald-600">{stats.confirmed}</p>
-          </div>
-          <div className="rounded-2xl bg-white p-6 shadow-md border border-slate-200">
-            <p className="text-sm font-semibold text-slate-600 uppercase">En attente</p>
-            <p className="mt-2 text-3xl font-bold text-amber-600">{stats.pending}</p>
-          </div>
-          <div className="rounded-2xl bg-white p-6 shadow-md border border-slate-200">
-            <p className="text-sm font-semibold text-slate-600 uppercase">Médecins</p>
-            <p className="mt-2 text-3xl font-bold text-blue-600">{stats.doctors}</p>
-          </div>
-        </div>
-
-        {/* Appointments */}
+          {/* Appointments */}
         <div className="rounded-2xl bg-white p-8 shadow-md border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900">Mes rendez-vous</h2>
           <div className="mt-6 space-y-4">

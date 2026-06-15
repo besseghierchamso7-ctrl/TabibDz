@@ -24,7 +24,6 @@ const waitingListSchema = new mongoose.Schema({
 
 waitingListSchema.index({ doctor: 1, status: 1 });
 waitingListSchema.index({ patient: 1, status: 1 });
-waitingListSchema.index({ expiresAt: 1 });
 waitingListSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('WaitingList', waitingListSchema);

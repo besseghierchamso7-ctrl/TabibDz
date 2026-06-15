@@ -1,5 +1,5 @@
 const express = require('express');
-const { dashboard, createSpecialty, createWilaya, patients, doctors, appointments, reviews, listSpecialties, listWilayas } = require('../controllers/adminController');
+const { dashboard, createSpecialty, createWilaya, patients, doctors, appointments, reviews, listSpecialties, listWilayas, deletePatient } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -11,6 +11,7 @@ router.get('/dashboard', dashboard);
 router.post('/specialties', createSpecialty);
 router.post('/wilayas', createWilaya);
 router.get('/patients', patients);
+router.delete('/patients/:id', deletePatient);
 router.get('/doctors', doctors);
 router.get('/appointments', appointments);
 router.get('/reviews', reviews);
