@@ -8,12 +8,12 @@
     "vercel-build": "node ./node_modules/vite/dist/node/cli.js build",
     "preview": "vite preview"
   },
-
   "dependencies": {
     "axios": "^1.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.16.0"
+    "react-router-dom": "^6.16.0",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.2",
