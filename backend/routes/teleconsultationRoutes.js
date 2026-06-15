@@ -1,12 +1,11 @@
-const express = require('express');
-const router = express.Router();
-const teleController = require('../controllers/teleconsultationController');
-const { protect } = require('../middleware/authMiddleware');
+const router = require('express').Router();
+const teleconsultationController = require('../controllers/teleconsultationController');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.get('/', protect, teleController.list);
-router.post('/', protect, teleController.create);
-router.get('/:id', protect, teleController.get);
-router.put('/:id', protect, teleController.update);
-router.delete('/:id', protect, teleController.remove);
+router.post('/', protect, authorize('doctor','admin'), teleconsultationController.create);
+router.get('/my', protect, teleconsultationController.listMy);
+router.get('/:id', protect, teleconsultationController.get);
+router.post('/:id/start', protect, authorize('doctor','admin'), teleconsultationController.start);
+router.post('/:id/end', protect, authorize('doctor','admin'), teleconsultationController.end);
 
 module.exports = router;

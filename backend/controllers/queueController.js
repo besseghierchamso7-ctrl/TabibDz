@@ -1,5 +1,6 @@
 const QueueService = require('../services/queueService');
 const Patient = require('../models/Patient');
+const socketService = require('../services/socketService');
 
 exports.joinQueue = async (req, res, next) => {
   try {
@@ -8,7 +9,10 @@ exports.joinQueue = async (req, res, next) => {
     const patient = await Patient.findOne({ user: req.user._id });
     if (!patient) return res.status(404).json({ message: 'Patient profile not found' });
     const result = await QueueService.joinQueue(doctorId, clinicId, patient._id, appointmentId);
-    res.status(201).json(result);
+      // emit real-time update to clinic/doctor room
+      const room = `doctor_${doctorId}_clinic_${clinicId || 'default'}`;
+      socketService.emit('queue:joined', room, result);
+      res.status(201).json(result);
   } catch (err) { next(err); }
 };
 
@@ -35,7 +39,13 @@ exports.callNextPatient = async (req, res, next) => {
   try {
     const { doctorId, clinicId } = req.body;
     const result = await QueueService.callNextPatient(doctorId, clinicId);
-    res.json(result);
+      // notify clinic and specific patient
+      const room = `doctor_${doctorId}_clinic_${clinicId || 'default'}`;
+      socketService.emit('queue:called', room, result);
+      if (result?.calledPatient?.patientId) {
+        socketService.emit('queue:called:patient', `patient_${result.calledPatient.patientId}`, result.calledPatient);
+      }
+      res.json(result);
   } catch (err) { next(err); }
 };
 
@@ -43,7 +53,9 @@ exports.markAsServed = async (req, res, next) => {
   try {
     const { doctorId, clinicId, patientQueueId } = req.body;
     const result = await QueueService.markAsServed(doctorId, clinicId, patientQueueId);
-    res.json(result);
+      const room = `doctor_${doctorId}_clinic_${clinicId || 'default'}`;
+      socketService.emit('queue:served', room, result);
+      res.json(result);
   } catch (err) { next(err); }
 };
 

@@ -28,6 +28,11 @@ const rateLimiter = require('./middleware/rateLimiter');
 dotenv.config();
 
 const app = express();
+const http = require('http');
+const { Server } = require('socket.io');
+const socketService = require('./services/socketService');
+const jwt = require('jsonwebtoken');
+const User = require('./models/User');
 
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 console.log('Using DNS servers:', dns.getServers());
@@ -117,6 +122,51 @@ app.use('/api/wilayas', wilayaRoutes);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// Initialize Socket.io with CORS matching allowed origins
+const io = new Server(server, {
+  cors: {
+    origin: [...allowedOrigins],
+    methods: ['GET','POST']
+  }
+});
+
+socketService.setIO(io);
+
+io.on('connection', (socket) => {
+  // Authenticate socket if token provided
+  (async () => {
+    try {
+      const token = socket.handshake?.auth?.token;
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const usr = await User.findById(decoded.id).select('-password');
+        if (usr) {
+          socket.user = usr;
+          // auto-join user-specific room
+          if (usr.role === 'patient') socket.join(`patient_${usr._id}`);
+          if (usr.role === 'doctor') socket.join(`doctor_${usr._id}`);
+        }
+      }
+    } catch (e) {
+      // ignore auth failure for anonymous sockets
+    }
+  })();
+
+  console.log('Socket connected:', socket.id);
+  socket.on('joinRoom', (room) => {
+    // Only allow joining public rooms or if authenticated
+    socket.join(room);
+    console.log(`${socket.id} joined ${room}`);
+  });
+  socket.on('leaveRoom', (room) => {
+    socket.leave(room);
+    console.log(`${socket.id} left ${room}`);
+  });
+  socket.on('disconnect', () => console.log('Socket disconnected:', socket.id));
+});
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

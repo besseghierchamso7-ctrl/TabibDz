@@ -1,5 +1,6 @@
 const WaitingListService = require('../services/waitingListService');
 const Patient = require('../models/Patient');
+const socketService = require('../services/socketService');
 
 exports.addToWaitingList = async (req, res, next) => {
   try {
@@ -32,6 +33,19 @@ exports.checkAndOfferSlots = async (req, res, next) => {
   try {
     const { doctorId, clinicId } = req.body;
     const results = await WaitingListService.checkAndOfferSlots(doctorId, clinicId);
+    // Emit offers to patients and notify doctor room
+    try {
+      const room = `doctor_${doctorId}_clinic_${clinicId || 'default'}`;
+      socketService.emit('waitingList:offersCreated', room, { count: results.length });
+      for (const match of results) {
+        if (match.patientId) {
+          socketService.emit('waitingList:offer', `patient_${match.patientId}`, match);
+        }
+      }
+    } catch (emitErr) {
+      console.error('Error emitting waiting list offers:', emitErr);
+    }
+
     res.json({ offered: results.length, slots: results });
   } catch (err) { next(err); }
 };
@@ -42,6 +56,17 @@ exports.acceptOffer = async (req, res, next) => {
     const patient = await Patient.findOne({ user: req.user._id });
     if (!patient) return res.status(404).json({ message: 'Patient profile not found' });
     const appointment = await WaitingListService.acceptOffer(waitingListId, patient._id);
+    // notify doctor and patient rooms
+    try {
+      const waitEntry = await require('../models/WaitingList').findById(waitingListId);
+      const doctorId = waitEntry?.doctor;
+      const clinicId = waitEntry?.clinic || 'default';
+      const room = `doctor_${doctorId}_clinic_${clinicId}`;
+      socketService.emit('waitingList:accepted', room, { waitingListId, appointment });
+      socketService.emit('waitingList:accepted:patient', `patient_${patient._id}`, { waitingListId, appointment });
+    } catch (emitErr) {
+      console.error('Error emitting acceptOffer events:', emitErr);
+    }
     res.json(appointment);
   } catch (err) { next(err); }
 };
@@ -52,6 +77,17 @@ exports.declineOffer = async (req, res, next) => {
     const patient = await Patient.findOne({ user: req.user._id });
     if (!patient) return res.status(404).json({ message: 'Patient profile not found' });
     const result = await WaitingListService.declineOffer(waitingListId, patient._id);
+    // notify doctor and patient rooms
+    try {
+      const waitEntry = await require('../models/WaitingList').findById(waitingListId);
+      const doctorId = waitEntry?.doctor;
+      const clinicId = waitEntry?.clinic || 'default';
+      const room = `doctor_${doctorId}_clinic_${clinicId}`;
+      socketService.emit('waitingList:declined', room, { waitingListId, patientId: patient._id });
+      socketService.emit('waitingList:declined:patient', `patient_${patient._id}`, { waitingListId });
+    } catch (emitErr) {
+      console.error('Error emitting declineOffer events:', emitErr);
+    }
     res.json(result);
   } catch (err) { next(err); }
 };

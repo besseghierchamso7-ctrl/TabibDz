@@ -1,41 +1,54 @@
-const teleService = require('../services/teleconsultationService');
+const teleconsultationService = require('../services/teleconsultationService');
 
 exports.create = async (req, res, next) => {
   try {
-    const body = Object.assign({}, req.body, { patient: req.user?.id });
-    const t = await teleService.create(body);
-    res.status(201).json(t);
+    const { appointmentId, patientId, clinicId, scheduledAt } = req.body;
+    const doctorId = req.user.role === 'doctor' ? req.user._id : req.body.doctorId;
+    const session = await teleconsultationService.create({
+      appointmentId,
+      doctorId,
+      patientId,
+      clinicId,
+      scheduledAt
+    });
+    res.status(201).json(session);
   } catch (err) { next(err); }
 };
 
 exports.get = async (req, res, next) => {
   try {
-    const t = await teleService.getById(req.params.id);
-    if (!t) return res.status(404).json({ message: 'Not found' });
-    res.json(t);
+    const session = await teleconsultationService.getById(req.params.id);
+    if (!session) return res.status(404).json({ message: 'Not found' });
+    res.json(session);
   } catch (err) { next(err); }
 };
 
-exports.list = async (req, res, next) => {
+exports.listMy = async (req, res, next) => {
   try {
-    const filter = {};
-    if (req.query.doctor) filter.doctor = req.query.doctor;
-    if (req.query.patient) filter.patient = req.query.patient;
-    const list = await teleService.list(filter);
-    res.json(list);
+    if (req.user.role === 'doctor') {
+      const list = await teleconsultationService.listByDoctor(req.user._id);
+      return res.json(list);
+    }
+    if (req.user.role === 'patient') {
+      const list = await teleconsultationService.listByPatient(req.user._id);
+      return res.json(list);
+    }
+    res.status(403).json({ message: 'Forbidden' });
   } catch (err) { next(err); }
 };
 
-exports.update = async (req, res, next) => {
+exports.start = async (req, res, next) => {
   try {
-    const updated = await teleService.update(req.params.id, req.body);
-    res.json(updated);
+    const id = req.params.id;
+    const sess = await teleconsultationService.updateStatus(id, 'in_progress');
+    res.json(sess);
   } catch (err) { next(err); }
 };
 
-exports.remove = async (req, res, next) => {
+exports.end = async (req, res, next) => {
   try {
-    await teleService.remove(req.params.id);
-    res.status(204).end();
+    const id = req.params.id;
+    const sess = await teleconsultationService.updateStatus(id, 'completed');
+    res.json(sess);
   } catch (err) { next(err); }
 };
