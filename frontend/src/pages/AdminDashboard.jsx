@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import apiClient from '../api/apiClient';
+import { io } from 'socket.io-client';
+import { AuthContext } from '../contexts/AuthContext';
 
 const AdminDashboard = () => {
   const [showSpecialtyForm, setShowSpecialtyForm] = useState(false);
@@ -65,6 +67,56 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, []);
 
+  const { token } = useContext(AuthContext);
+  useEffect(() => {
+    const baseApi = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/,'') : window.location.origin.replace(':5173',':5000');
+    const socket = io(baseApi, { path: '/socket.io', auth: { token } });
+
+    socket.on('appointment:created', (appointment) => {
+      setStats((s) => ({ ...s, appointmentsCount: (s.appointmentsCount || 0) + 1, pendingCount: (s.pendingCount || 0) + (appointment.status === 'pending' ? 1 : 0), confirmedCount: (s.confirmedCount || 0) + (appointment.status === 'confirmed' ? 1 : 0) }));
+      setRecentAppointments((r) => [{
+        patient: appointment.patient?.user ? `${appointment.patient.user.firstName} ${appointment.patient.user.lastName}` : appointment.patient?.name || 'Patient',
+        doctor: appointment.doctor?.user ? `Dr. ${appointment.doctor.user.firstName} ${appointment.doctor.user.lastName}` : appointment.doctor?.name || 'Médecin',
+        date: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : 'N/A',
+        time: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+        status: appointment.status
+      }, ...r].slice(0,3));
+    });
+
+    socket.on('appointment:updated', (appointment) => {
+      // adjust counts based on status change
+      // best-effort: refetch stats for accuracy when complex
+      setStats((s) => {
+        const updated = { ...s };
+        // naive adjustments — safer to refetch but we'll try to adjust
+        if (appointment.status === 'confirmed') {
+          updated.confirmedCount = (s.confirmedCount || 0) + 1;
+          updated.pendingCount = Math.max(0, (s.pendingCount || 0) - 1);
+        }
+        if (appointment.status === 'cancelled') {
+          updated.pendingCount = Math.max(0, (s.pendingCount || 0) - 1);
+          updated.appointmentsCount = Math.max(0, (s.appointmentsCount || 0) - 1);
+        }
+        return updated;
+      });
+      // update recent appointments list
+      setRecentAppointments((r) => {
+        const mapped = r.map((it) => it);
+        // prepend updated appointment
+        const newEntry = {
+          patient: appointment.patient?.user ? `${appointment.patient.user.firstName} ${appointment.patient.user.lastName}` : appointment.patient?.name || 'Patient',
+          doctor: appointment.doctor?.user ? `Dr. ${appointment.doctor.user.firstName} ${appointment.doctor.user.lastName}` : appointment.doctor?.name || 'Médecin',
+          date: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : 'N/A',
+          time: appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+          status: appointment.status === 'confirmed' ? 'Confirmé' : appointment.status === 'pending' ? 'En attente' : appointment.status
+        };
+        return [newEntry, ...mapped].slice(0,3);
+      });
+    });
+
+    return () => socket.disconnect();
+  }, [token]);
+
   const handleSpecialtySubmit = async (event) => {
     event.preventDefault();
     setCreateStatus('Envoi en cours...');
@@ -85,10 +137,10 @@ const AdminDashboard = () => {
   };
 
   const metrics = [
-    { label: 'Patients actifs', value: statsLoading ? '...' : stats.patientsCount.toLocaleString('fr-FR'), note: 'Total de patients', color: 'bg-sky-100 text-sky-700' },
-    { label: 'Médecins vérifiés', value: statsLoading ? '...' : stats.doctorsCount.toLocaleString('fr-FR'), note: 'Médecins enregistrés', color: 'bg-emerald-100 text-emerald-700' },
-    { label: 'Rendez-vous', value: statsLoading ? '...' : stats.appointmentsCount.toLocaleString('fr-FR'), note: 'Total des rendez-vous', color: 'bg-amber-100 text-amber-700' },
-    { label: 'Revenu mensuel', value: statsLoading ? '...' : `${stats.revenue.toLocaleString('fr-FR')} DA`, note: 'Chiffre d’affaires validé', color: 'bg-violet-100 text-violet-700' }
+    { label: 'Rendez-vous', value: statsLoading ? '...' : (stats.appointmentsCount || 0).toLocaleString('fr-FR'), note: 'Total des rendez-vous', color: 'bg-amber-100 text-amber-700' },
+    { label: 'Confirmés', value: statsLoading ? '...' : (stats.confirmedCount || 0).toLocaleString('fr-FR'), note: 'Rendez-vous confirmés', color: 'bg-emerald-100 text-emerald-700' },
+    { label: 'En attente', value: statsLoading ? '...' : (stats.pendingCount || 0).toLocaleString('fr-FR'), note: 'Rendez-vous en attente', color: 'bg-rose-100 text-rose-700' },
+    { label: 'Médecins', value: statsLoading ? '...' : (stats.doctorsCount || 0).toLocaleString('fr-FR'), note: 'Médecins enregistrés', color: 'bg-sky-100 text-sky-700' }
   ];
 
   return (

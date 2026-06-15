@@ -1,6 +1,49 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import apiClient from '../api/apiClient';
 
 const Home = () => {
+  const [stats, setStats] = useState({ patients: 0, doctors: 0, appointments: 0 });
+  const [specialties, setSpecialties] = useState([]);
+  const [wilayas, setWilayas] = useState([]);
+  const [filters, setFilters] = useState({ specialty: '', wilaya: '', search: '' });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsRes, specialtiesRes, wilayasRes] = await Promise.all([
+          apiClient.get('/stats/public'),
+          apiClient.get('/specialties'),
+          apiClient.get('/wilayas')
+        ]);
+        setStats(statsRes.data);
+        setSpecialties(specialtiesRes.data);
+        setWilayas(wilayasRes.data);
+      } catch (err) {
+        console.error('Error fetching home data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    // Navigate to search with filters
+    const params = new URLSearchParams();
+    if (filters.specialty) params.append('specialty', filters.specialty);
+    if (filters.wilaya) params.append('wilaya', filters.wilaya);
+    if (filters.search) params.append('search', filters.search);
+    window.location.href = `/search?${params.toString()}`;
+  };
+
   return (
     <>
       {/* Hero Section */}
@@ -17,20 +60,37 @@ const Home = () => {
           </div>
           <div className="rounded-[2rem] bg-gradient-to-br from-blue-50 to-blue-100 p-10 shadow-lg">
             <h2 className="text-2xl font-bold text-slate-900">Recherche rapide</h2>
-            <form className="mt-8 space-y-4">
-              <input className="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" placeholder="Nom du médecin, spécialité..." />
+            <form onSubmit={handleSearch} className="mt-8 space-y-4">
+              <input
+                type="text"
+                name="search"
+                value={filters.search}
+                onChange={handleFilterChange}
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                placeholder="Nom du médecin, spécialité..."
+              />
               <div className="grid gap-3 sm:grid-cols-2">
-                <select className="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white focus:border-blue-500 focus:outline-none">
-                  <option>Wilaya</option>
-                  <option>Alger</option>
-                  <option>Oran</option>
-                  <option>Constantine</option>
+                <select
+                  name="wilaya"
+                  value={filters.wilaya}
+                  onChange={handleFilterChange}
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="">Wilaya</option>
+                  {wilayas.map(w => (
+                    <option key={w._id} value={w._id}>{w.name}</option>
+                  ))}
                 </select>
-                <select className="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white focus:border-blue-500 focus:outline-none">
-                  <option>Spécialité</option>
-                  <option>Médecine Générale</option>
-                  <option>Cardiologie</option>
-                  <option>Pédiatrie</option>
+                <select
+                  name="specialty"
+                  value={filters.specialty}
+                  onChange={handleFilterChange}
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="">Spécialité</option>
+                  {specialties.map(s => (
+                    <option key={s._id} value={s._id}>{s.name}</option>
+                  ))}
                 </select>
               </div>
               <button type="submit" className="w-full rounded-2xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700">Rechercher</button>
@@ -44,15 +104,15 @@ const Home = () => {
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="grid gap-8 sm:grid-cols-3">
             <div className="text-center">
-              <p className="text-4xl font-bold">1,248+</p>
+              <p className="text-4xl font-bold">{stats.patients}+</p>
               <p className="mt-2 text-slate-300">Patients actifs</p>
             </div>
             <div className="text-center">
-              <p className="text-4xl font-bold">342+</p>
+              <p className="text-4xl font-bold">{stats.doctors}+</p>
               <p className="mt-2 text-slate-300">Médecins vérifiés</p>
             </div>
             <div className="text-center">
-              <p className="text-4xl font-bold">5,980+</p>
+              <p className="text-4xl font-bold">{stats.appointments}+</p>
               <p className="mt-2 text-slate-300">Rendez-vous</p>
             </div>
           </div>

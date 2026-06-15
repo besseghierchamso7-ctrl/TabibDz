@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import apiClient from '../api/apiClient';
+import { io } from 'socket.io-client';
+import { AuthContext } from '../contexts/AuthContext';
 
 const PatientDashboard = () => {
   const [appointments, setAppointments] = useState([]);
@@ -21,22 +23,24 @@ const PatientDashboard = () => {
           total: data.length,
           confirmed,
           pending,
-          doctors: data.length > 0 ? doctorCount : 0
+          doctors: doctorCount
         });
       } catch (err) {
         console.error('Error fetching appointments:', err);
-        // Fallback data
-        setAppointments([
-          { _id: 1, doctorId: { firstName: 'Yasmine', lastName: 'Ben', specialty: 'Cardiologie' }, appointmentDate: '2026-06-14', appointmentTime: '11:00', status: 'confirmed' },
-          { _id: 2, doctorId: { firstName: 'Sofiane', lastName: 'M.', specialty: 'Médecine Générale' }, appointmentDate: '2026-06-20', appointmentTime: '14:30', status: 'pending' }
-        ]);
-        setStats({ total: 2, confirmed: 1, pending: 1, doctors: 5 });
       } finally {
         setLoading(false);
       }
     };
 
     fetchAppointments();
+    // setup socket for live updates
+    const token = localStorage.getItem('token');
+    const baseApi = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/,'') : window.location.origin.replace(':5173',':5000');
+    const socket = io(baseApi, { path: '/socket.io', auth: { token } });
+    socket.on('appointment:created', fetchAppointments);
+    socket.on('appointment:updated', fetchAppointments);
+
+    return () => socket.disconnect();
   }, []);
 
   if (loading) {
@@ -59,19 +63,19 @@ const PatientDashboard = () => {
         <div className="grid gap-6 md:grid-cols-4 mb-8">
           <div className="rounded-2xl bg-white p-6 shadow-md border border-slate-200">
             <p className="text-sm font-semibold text-slate-600 uppercase">Rendez-vous</p>
-            <p className="mt-2 text-3xl font-bold text-slate-900">2</p>
+            <p className="mt-2 text-3xl font-bold text-slate-900">{stats.total}</p>
           </div>
           <div className="rounded-2xl bg-white p-6 shadow-md border border-slate-200">
             <p className="text-sm font-semibold text-slate-600 uppercase">Confirmés</p>
-            <p className="mt-2 text-3xl font-bold text-emerald-600">1</p>
+            <p className="mt-2 text-3xl font-bold text-emerald-600">{stats.confirmed}</p>
           </div>
           <div className="rounded-2xl bg-white p-6 shadow-md border border-slate-200">
             <p className="text-sm font-semibold text-slate-600 uppercase">En attente</p>
-            <p className="mt-2 text-3xl font-bold text-amber-600">1</p>
+            <p className="mt-2 text-3xl font-bold text-amber-600">{stats.pending}</p>
           </div>
           <div className="rounded-2xl bg-white p-6 shadow-md border border-slate-200">
             <p className="text-sm font-semibold text-slate-600 uppercase">Médecins</p>
-            <p className="mt-2 text-3xl font-bold text-blue-600">5</p>
+            <p className="mt-2 text-3xl font-bold text-blue-600">{stats.doctors}</p>
           </div>
         </div>
 
