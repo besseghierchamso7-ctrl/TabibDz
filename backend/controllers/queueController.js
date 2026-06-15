@@ -1,24 +1,57 @@
-const queueService = require('../services/queueService');
+const QueueService = require('../services/queueService');
+const Patient = require('../models/Patient');
 
-exports.get = async (req, res, next) => {
+exports.joinQueue = async (req, res, next) => {
   try {
-    const q = await queueService.getQueueForClinic(req.params.clinicId);
-    res.json(q || { entries: [] });
+    const { doctorId, appointmentId } = req.body;
+    const clinicId = req.query.clinicId;
+    const patient = await Patient.findOne({ user: req.user._id });
+    if (!patient) return res.status(404).json({ message: 'Patient profile not found' });
+    const result = await QueueService.joinQueue(doctorId, clinicId, patient._id, appointmentId);
+    res.status(201).json(result);
   } catch (err) { next(err); }
 };
 
-exports.join = async (req, res, next) => {
+exports.getQueueStatus = async (req, res, next) => {
   try {
-    const entry = { patient: req.user.id, status: 'waiting', joinedAt: new Date(), meta: req.body.meta };
-    const q = await queueService.addEntry(req.params.clinicId, entry);
-    res.status(201).json(q);
+    const { doctorId } = req.params;
+    const { clinicId } = req.query;
+    const patient = await Patient.findOne({ user: req.user._id });
+    if (!patient) return res.status(404).json({ message: 'Patient profile not found' });
+    const status = await QueueService.getQueueStatus(doctorId, clinicId, patient._id);
+    res.json(status);
   } catch (err) { next(err); }
 };
 
-exports.callNext = async (req, res, next) => {
+exports.getQueueForClinic = async (req, res, next) => {
   try {
-    const next = await queueService.callNext(req.params.clinicId);
-    if (!next) return res.status(404).json({ message: 'No waiting entries' });
-    res.json(next);
+    const { clinicId } = req.params;
+    const queue = await QueueService.getQueueForClinic(clinicId);
+    res.json(queue || { entries: [] });
+  } catch (err) { next(err); }
+};
+
+exports.callNextPatient = async (req, res, next) => {
+  try {
+    const { doctorId, clinicId } = req.body;
+    const result = await QueueService.callNextPatient(doctorId, clinicId);
+    res.json(result);
+  } catch (err) { next(err); }
+};
+
+exports.markAsServed = async (req, res, next) => {
+  try {
+    const { doctorId, clinicId, patientQueueId } = req.body;
+    const result = await QueueService.markAsServed(doctorId, clinicId, patientQueueId);
+    res.json(result);
+  } catch (err) { next(err); }
+};
+
+exports.getQueueAnalytics = async (req, res, next) => {
+  try {
+    const { doctorId } = req.params;
+    const { startDate, endDate } = req.query;
+    const stats = await QueueService.getQueueAnalytics(doctorId, new Date(startDate), new Date(endDate));
+    res.json(stats);
   } catch (err) { next(err); }
 };

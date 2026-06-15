@@ -1,9 +1,12 @@
 const router = require('express').Router();
 const queueController = require('../controllers/queueController');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.get('/:clinicId', protect, queueController.get);
-router.post('/:clinicId/join', protect, queueController.join);
-router.post('/:clinicId/call', protect, admin, queueController.callNext);
+router.post('/join', protect, authorize('patient'), queueController.joinQueue);
+router.get('/status/:doctorId', protect, authorize('patient'), queueController.getQueueStatus);
+router.get('/clinic/:clinicId', protect, authorize('doctor', 'clinic_manager', 'admin'), queueController.getQueueForClinic);
+router.post('/call-next', protect, authorize('doctor', 'clinic_manager', 'admin'), queueController.callNextPatient);
+router.post('/mark-served', protect, authorize('doctor', 'clinic_manager', 'admin'), queueController.markAsServed);
+router.get('/analytics/:doctorId', protect, authorize('doctor', 'clinic_manager', 'admin'), queueController.getQueueAnalytics);
 
 module.exports = router;
