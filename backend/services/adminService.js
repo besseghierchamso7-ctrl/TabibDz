@@ -9,6 +9,8 @@ const getDashboardStats = async () => {
   const doctorsCount = await Doctor.countDocuments();
   const patientsCount = await User.countDocuments({ role: 'patient' });
   const appointmentsCount = await Appointment.countDocuments();
+  const confirmedCount = await Appointment.countDocuments({ status: 'confirmed' });
+  const pendingCount = await Appointment.countDocuments({ status: 'pending' });
   const revenue = await Appointment.aggregate([
     { $match: { paymentStatus: 'paid' } },
     { $group: { _id: null, total: { $sum: '$price' } } }
@@ -18,6 +20,8 @@ const getDashboardStats = async () => {
     doctorsCount,
     patientsCount,
     appointmentsCount,
+    confirmedCount,
+    pendingCount,
     revenue: revenue[0]?.total || 0,
     reviewsCount
   };
