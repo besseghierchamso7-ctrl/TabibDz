@@ -8,6 +8,7 @@ import Booking from './pages/Booking';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -47,6 +48,7 @@ function AppRoutes() {
         <Route element={<ProtectedRoute requiredRole="patient"><Layout><PatientDashboard /></Layout></ProtectedRoute>} path="/dashboard/patient" />
         <Route element={<ProtectedRoute requiredRole="doctor"><Layout><DoctorDashboard /></Layout></ProtectedRoute>} path="/dashboard/doctor" />
         <Route element={<ProtectedRoute requiredRole="admin"><Layout><AdminDashboard /></Layout></ProtectedRoute>} path="/dashboard/admin" />
+        <Route element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} path="/profile" />
       </Routes>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 import { io } from 'socket.io-client';
 import { AuthContext } from '../contexts/AuthContext';
@@ -200,6 +201,9 @@ const AdminDashboard = () => {
             <p className="mt-3 max-w-2xl text-slate-200">Analysez les performances, approuvez les médecins et suivez les rendez-vous en temps réel.</p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <Link to="/profile" className="inline-flex items-center rounded-full bg-white/15 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/25">
+              👤 Mon profil
+            </Link>
             <button onClick={() => setShowSpecialtyForm(true)} className="rounded-full bg-white/15 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/25">Nouvelle spécialité</button>
             <button className="rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-900 transition hover:bg-slate-200">Rapport PDF</button>
           </div>

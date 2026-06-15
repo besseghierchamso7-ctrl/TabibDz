@@ -1,4 +1,5 @@
 import { useContext, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import { io } from 'socket.io-client';
 import apiClient from '../api/apiClient';
@@ -132,6 +133,11 @@ const DoctorDashboard = () => {
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-slate-900">Tableau de bord médecin</h1>
           <p className="mt-2 text-slate-600">Gérez vos rendez-vous et votre planning</p>
+          <div className="mt-4">
+            <Link to="/profile" className="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+              👤 Mon profil
+            </Link>
+          </div>
         </div>
       </section>
 
