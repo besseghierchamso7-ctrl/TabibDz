@@ -8,23 +8,38 @@ const PatientDashboard = () => {
   const [stats, setStats] = useState({ total: 0, confirmed: 0, pending: 0, doctors: 0 });
   const [loading, setLoading] = useState(true);
 
+  const deriveStats = (list) => {
+    const confirmed = list.filter(a => a.status === 'confirmed').length;
+    const pending = list.filter(a => a.status === 'pending').length;
+    const doctorCount = new Set(list.map(a => a.doctor?._id || a.doctorId)).size;
+    return {
+      total: list.length,
+      confirmed,
+      pending,
+      doctors: doctorCount
+    };
+  };
+
+  const handleCancelAppointment = async (appointmentId) => {
+    try {
+      await apiClient.post(`/appointments/${appointmentId}/cancel`);
+      setAppointments((prev) => {
+        const updated = prev.map((apt) => apt._id === appointmentId ? { ...apt, status: 'cancelled' } : apt);
+        setStats(deriveStats(updated));
+        return updated;
+      });
+    } catch (err) {
+      console.error('Error cancelling appointment:', err);
+    }
+  };
+
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
         const response = await apiClient.get('/appointments');
         const data = response.data || [];
         setAppointments(data);
-
-        const confirmed = data.filter(a => a.status === 'confirmed').length;
-        const pending = data.filter(a => a.status === 'pending').length;
-        const doctorCount = new Set(data.map(a => a.doctor?._id || a.doctorId)).size;
-        
-        setStats({
-          total: data.length,
-          confirmed,
-          pending,
-          doctors: doctorCount
-        });
+        setStats(deriveStats(data));
       } catch (err) {
         console.error('Error fetching appointments:', err);
       } finally {
@@ -98,10 +113,21 @@ const PatientDashboard = () => {
                   <div className="text-right">
                     <p className="text-sm font-medium text-slate-900">{scheduledDate} à {scheduledTime}</p>
                     <span className={`inline-flex mt-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                      statusLabel === 'Confirmé' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                      statusLabel === 'Confirmé' ? 'bg-emerald-100 text-emerald-700' : statusLabel === 'Annulé' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
                     }`}>
                       {statusLabel}
                     </span>
+                    {apt.status !== 'cancelled' && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => handleCancelAppointment(apt._id)}
+                          className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

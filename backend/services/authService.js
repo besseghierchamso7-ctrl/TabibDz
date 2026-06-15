@@ -101,4 +101,25 @@ const resetPassword = async (token, password) => {
   return true;
 };
 
-module.exports = { register, login, refreshAuthToken, requestPasswordReset, resetPassword };
+const updateUserProfile = async (userId, data) => {
+  const allowedFields = ['firstName', 'lastName', 'email', 'phone', 'gender', 'avatar'];
+  const updates = {};
+
+  allowedFields.forEach((field) => {
+    if (data[field] !== undefined) updates[field] = data[field];
+  });
+
+  if (updates.email) {
+    updates.email = updates.email.toLowerCase();
+    const existingUser = await User.findOne({ email: updates.email, _id: { $ne: userId } });
+    if (existingUser) {
+      throw createApiError('Email already registered', 409);
+    }
+  }
+
+  const user = await User.findByIdAndUpdate(userId, updates, { new: true, runValidators: true }).select('-password');
+  if (!user) throw createApiError('User not found', 404);
+  return sanitizeUser(user);
+};
+
+module.exports = { register, login, refreshAuthToken, requestPasswordReset, resetPassword, updateUserProfile };

@@ -85,6 +85,20 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Update profile
+  const updateProfile = useCallback(async (profileData) => {
+    setError('');
+    try {
+      const res = await apiClient.put('/auth/me', profileData);
+      setUser(res.data);
+      return res.data;
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Profile update failed';
+      setError(message);
+      throw new Error(message);
+    }
+  }, []);
+
   // Logout
   const logout = useCallback(() => {
     setToken(null);
@@ -93,7 +107,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, error, login, register, logout, forgotPassword, setError }}>
+    <AuthContext.Provider value={{ user, token, loading, error, login, register, logout, forgotPassword, updateProfile, setError }}>
       {children}
     </AuthContext.Provider>
   );

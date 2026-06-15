@@ -1,5 +1,7 @@
-const { bookAppointment, getAppointments, updateAppointmentStatus, rescheduleAppointment } = require('../services/appointmentService');
+const { bookAppointment, getAppointments, updateAppointmentStatus, rescheduleAppointment, cancelAppointment } = require('../services/appointmentService');
+const Appointment = require('../models/Appointment');
 const Patient = require('../models/Patient');
+const Doctor = require('../models/Doctor');
 
 const createAppointment = async (req, res, next) => {
   try {
@@ -40,11 +42,58 @@ const changeStatus = async (req, res, next) => {
 
 const reschedule = async (req, res, next) => {
   try {
-    const appointment = await rescheduleAppointment(req.params.id, req.body.scheduledAt);
-    res.json(appointment);
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    if (req.user.role === 'patient') {
+      const patientProfile = await Patient.findOne({ user: req.user._id });
+      if (!patientProfile || appointment.patient.toString() !== patientProfile._id.toString()) {
+        return res.status(403).json({ message: 'Forbidden: cannot reschedule this appointment' });
+      }
+    }
+
+    if (req.user.role === 'doctor') {
+      const doctorProfile = await Doctor.findOne({ user: req.user._id });
+      if (!doctorProfile || appointment.doctor.toString() !== doctorProfile._id.toString()) {
+        return res.status(403).json({ message: 'Forbidden: cannot reschedule this appointment' });
+      }
+    }
+
+    const updatedAppointment = await rescheduleAppointment(req.params.id, req.body.scheduledAt);
+    res.json(updatedAppointment);
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { createAppointment, getAllAppointments, changeStatus, reschedule };
+const cancel = async (req, res, next) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    if (req.user.role === 'patient') {
+      const patientProfile = await Patient.findOne({ user: req.user._id });
+      if (!patientProfile || appointment.patient.toString() !== patientProfile._id.toString()) {
+        return res.status(403).json({ message: 'Forbidden: cannot cancel this appointment' });
+      }
+    }
+
+    if (req.user.role === 'doctor') {
+      const doctorProfile = await Doctor.findOne({ user: req.user._id });
+      if (!doctorProfile || appointment.doctor.toString() !== doctorProfile._id.toString()) {
+        return res.status(403).json({ message: 'Forbidden: cannot cancel this appointment' });
+      }
+    }
+
+    const cancelled = await cancelAppointment(req.params.id);
+    res.json(cancelled);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { createAppointment, getAllAppointments, changeStatus, reschedule, cancel };

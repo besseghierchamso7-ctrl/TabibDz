@@ -6,30 +6,29 @@ import apiClient from '../api/apiClient';
 const Booking = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, token } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const [formData, setFormData] = useState({ date: '', time: '', reason: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [doctor, setDoctor] = useState(null);
+  const [availability, setAvailability] = useState({ dateRanges: [], availability: null });
 
   // Fetch doctor details
   useEffect(() => {
     const fetchDoctor = async () => {
       try {
-        const response = await apiClient.get(`/doctors/${id}`);
-        setDoctor(response.data);
+        const [{ data: doctorData }, { data: availabilityData }] = await Promise.all([
+          apiClient.get(`/doctors/${id}`),
+          apiClient.get(`/doctors/${id}/availability?days=14`)
+        ]);
+        setDoctor(doctorData);
+        setAvailability(availabilityData);
+        if (availabilityData.dateRanges?.length) {
+          setFormData((prev) => ({ ...prev, date: availabilityData.dateRanges[0].date, time: availabilityData.dateRanges[0].times[0] || '' }));
+        }
       } catch (err) {
-        console.error('Error fetching doctor:', err);
-        // Fallback doctor data
-        setDoctor({
-          _id: id,
-          firstName: 'Yasmine',
-          lastName: 'Ben Fatima',
-          specialty: 'Cardiologie',
-          consultationFee: 4500,
-          rating: 4.9,
-          wilaya: 'Alger'
-        });
+        console.error('Error fetching doctor or availability:', err);
+        setError('Impossible de charger les informations du médecin ou ses créneaux disponibles.');
       }
     };
 
@@ -109,15 +108,21 @@ const Booking = () => {
             {/* Date Selection */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-3">Date de consultation</label>
-              <input
-                type="date"
+              <select
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
                 required
                 className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-blue-500 focus:outline-none transition"
-              />
-              <p className="mt-2 text-xs text-slate-600">Les consultations sont disponibles du lundi au samedi</p>
+              >
+                <option value="">-- Sélectionner une date --</option>
+                {availability.dateRanges?.map((range) => (
+                  <option key={range.date} value={range.date}>
+                    {new Date(range.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-xs text-slate-600">Sélectionnez une date disponible affichée par créneaux.</p>
             </div>
 
             {/* Time Selection */}
@@ -129,15 +134,18 @@ const Booking = () => {
                 onChange={handleChange}
                 required
                 className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-blue-500 focus:outline-none transition"
+                disabled={!formData.date || !availability.dateRanges?.length}
               >
                 <option value="">-- Sélectionner une heure --</option>
-                <option value="09:00">09:00 - 09:30</option>
-                <option value="10:00">10:00 - 10:30</option>
-                <option value="11:00">11:00 - 11:30</option>
-                <option value="14:00">14:00 - 14:30</option>
-                <option value="15:00">15:00 - 15:30</option>
-                <option value="16:00">16:00 - 16:30</option>
+                {availability.dateRanges
+                  .find((range) => range.date === formData.date)
+                  ?.times.map((time) => (
+                    <option key={`${formData.date}-${time}`} value={time}>{time}</option>
+                  ))}
               </select>
+              {!formData.date && (
+                <p className="mt-2 text-xs text-slate-600">Choisissez d'abord une date pour voir les créneaux horaires disponibles.</p>
+              )}
             </div>
 
             {/* Reason */}

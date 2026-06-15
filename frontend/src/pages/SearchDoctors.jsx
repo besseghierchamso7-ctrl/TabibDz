@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '../api/apiClient';
 
 const SearchDoctors = () => {
-  const [filters, setFilters] = useState({ wilaya: '', specialty: '', gender: '' });
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [filters, setFilters] = useState({ wilaya: '', specialty: '', gender: '', search: '' });
   const [doctors, setDoctors] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [wilayas, setWilayas] = useState([]);
@@ -12,11 +14,26 @@ const SearchDoctors = () => {
 
   // Fetch doctors, specialties, and wilayas from API
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const newFilters = {
+      wilaya: params.get('wilaya') || '',
+      specialty: params.get('specialty') || '',
+      gender: params.get('gender') || '',
+      search: params.get('search') || ''
+    };
+    setFilters(newFilters);
+
     const fetchData = async () => {
       try {
         setLoading(true);
         const [doctorsRes, specialtiesRes, wilayasRes] = await Promise.all([
-          apiClient.get('/doctors'),
+          apiClient.get('/doctors', {
+            params: {
+              wilaya: newFilters.wilaya || undefined,
+              specialty: newFilters.specialty || undefined,
+              gender: newFilters.gender || undefined
+            }
+          }),
           apiClient.get('/specialties'),
           apiClient.get('/wilayas')
         ]);
@@ -32,17 +49,23 @@ const SearchDoctors = () => {
     };
 
     fetchData();
-  }, []);
+  }, [location.search]);
 
-  const filteredDoctors = doctors.filter(doc => {
+  const filteredDoctors = doctors.filter((doc) => {
     const specialtyId = doc.specialty?._id || doc.specialty;
     const wilayaId = doc.wilaya?._id || doc.wilaya;
     const gender = doc.user?.gender || doc.gender || '';
-    return (
+    const matchesFilters = (
       (!filters.wilaya || wilayaId === filters.wilaya) &&
       (!filters.specialty || specialtyId === filters.specialty) &&
       (!filters.gender || gender === filters.gender)
     );
+    if (!matchesFilters) return false;
+    if (!filters.search) return true;
+    const query = filters.search.toLowerCase();
+    const name = `${doc.user?.firstName || doc.firstName || ''} ${doc.user?.lastName || doc.lastName || ''}`.toLowerCase();
+    const specialtyName = doc.specialty?.name || '';
+    return name.includes(query) || specialtyName.toLowerCase().includes(query);
   });
 
   return (
@@ -99,14 +122,24 @@ const SearchDoctors = () => {
                 <option value="female">Femme</option>
               </select>
             </div>
-            <div className="flex items-end">
-              <button
-                onClick={() => setFilters({ wilaya: '', specialty: '', gender: '' })}
-                className="w-full rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-200"
-              >
-                Réinitialiser
-              </button>
+            <div>
+              <label className="block text-xs font-semibold uppercase text-slate-700">Rechercher</label>
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                placeholder="Nom du médecin ou spécialité"
+                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              />
             </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => setFilters({ wilaya: '', specialty: '', gender: '', search: '' })}
+              className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-200"
+            >
+              Réinitialiser
+            </button>
           </div>
         </div>
       </section>

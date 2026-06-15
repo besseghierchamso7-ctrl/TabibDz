@@ -9,18 +9,32 @@ const isSlotAvailable = async (doctorId, scheduledAt) => {
   return !conflict;
 };
 
+const isDoctorAvailableAt = (doctor, scheduledAt) => {
+  if (!doctor.availability || !doctor.availability.days || !doctor.availability.timeSlots) {
+    return true;
+  }
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const scheduledDate = new Date(scheduledAt);
+  const dayName = dayNames[scheduledDate.getDay()];
+  const time = scheduledDate.toISOString().slice(11, 16);
+  return doctor.availability.days.includes(dayName) && doctor.availability.timeSlots.includes(time);
+};
+
 const bookAppointment = async ({ patientId, doctorId, scheduledAt, reason, price }) => {
   const patient = await Patient.findById(patientId);
   if (!patient) throw new Error('Patient profile not found');
   const doctor = await Doctor.findById(doctorId);
   if (!doctor || doctor.status !== 'verified') throw new Error('Doctor unavailable');
-  if (!(await isSlotAvailable(doctorId, new Date(scheduledAt)))) {
+  const scheduledDate = new Date(scheduledAt);
+  if (!(await isSlotAvailable(doctorId, scheduledDate))) {
     throw new Error('Selected time slot is no longer available');
   }
-  const appointment = await Appointment.create({ patient: patientId, doctor: doctorId, scheduledAt, reason, price, createdBy: patient.user });
+  if (!isDoctorAvailableAt(doctor, scheduledDate)) {
+    throw new Error('Selected time is outside the doctor availability');
+  }
+  const appointment = await Appointment.create({ patient: patientId, doctor: doctorId, scheduledAt: scheduledDate, reason, price, createdBy: patient.user });
   await Notification.create({ user: patient.user, title: 'Rendez-vous réservé', message: 'Votre rendez-vous a été enregistré et est en attente de confirmation.', type: 'appointment' });
   try {
-    // notify doctor room and admin dashboard
     socketService.emit('appointment:created', `doctor_${doctorId}`, appointment);
     socketService.emit('appointment:created', null, appointment); // broadcast
   } catch (e) {
@@ -33,8 +47,18 @@ const getAppointments = async (filters, pagination = {}) => {
   const query = {};
   if (filters.patient) query.patient = filters.patient;
   if (filters.doctor) query.doctor = filters.doctor;
-  if (filters.status) query.status = filters.status;
-  if (filters.after) query.scheduledAt = { $gte: new Date(filters.after) };
+  if (filters.status) {
+    const statuses = Array.isArray(filters.status)
+      ? filters.status
+      : String(filters.status).split(',').map((s) => s.trim()).filter(Boolean);
+    if (statuses.length === 1) {
+      query.status = statuses[0];
+    } else if (statuses.length > 1) {
+      query.status = { $in: statuses };
+    }
+  }
+  if (filters.after) query.scheduledAt = { ...query.scheduledAt, $gte: new Date(filters.after) };
+  if (filters.before) query.scheduledAt = { ...query.scheduledAt, $lte: new Date(filters.before) };
   return Appointment.find(query)
     .populate('doctor patient')
     .sort({ scheduledAt: 1 })
@@ -68,4 +92,19 @@ const rescheduleAppointment = async (appointmentId, scheduledAt) => {
   return appointment;
 };
 
-module.exports = { isSlotAvailable, bookAppointment, getAppointments, updateAppointmentStatus, rescheduleAppointment };
+const cancelAppointment = async (appointmentId) => {
+  const appointment = await Appointment.findById(appointmentId);
+  if (!appointment) throw new Error('Appointment not found');
+  appointment.status = 'cancelled';
+  await appointment.save();
+  try {
+    socketService.emit('appointment:updated', `doctor_${appointment.doctor}`, appointment);
+    socketService.emit('appointment:updated', `patient_${appointment.patient}`, appointment);
+    socketService.emit('appointment:updated', null, appointment);
+  } catch (e) {
+    console.error('Socket emit error (cancelAppointment):', e);
+  }
+  return appointment;
+};
+
+module.exports = { isSlotAvailable, bookAppointment, getAppointments, updateAppointmentStatus, rescheduleAppointment, cancelAppointment };

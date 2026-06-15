@@ -1,4 +1,4 @@
-const { requestDoctorRegistration, getDoctors, getDoctorById, updateDoctorProfile, verifyDoctor, getTopDoctors } = require('../services/doctorService');
+const { requestDoctorRegistration, getDoctors, getDoctorById, updateDoctorProfile, verifyDoctor, getTopDoctors, getDoctorAvailability } = require('../services/doctorService');
 
 const createDoctorRequest = async (req, res, next) => {
   try {
@@ -46,6 +46,15 @@ const approveDoctor = async (req, res, next) => {
   }
 };
 
+const getAvailability = async (req, res, next) => {
+  try {
+    const availability = await getDoctorAvailability(req.params.id, req.query);
+    res.json(availability);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const topDoctors = async (req, res, next) => {
   try {
     const doctors = await getTopDoctors();
@@ -55,4 +64,4 @@ const topDoctors = async (req, res, next) => {
   }
 };
 
-module.exports = { createDoctorRequest, listDoctors, doctorDetails, updateDoctor, approveDoctor, topDoctors };
+module.exports = { createDoctorRequest, listDoctors, doctorDetails, updateDoctor, approveDoctor, getAvailability, topDoctors };

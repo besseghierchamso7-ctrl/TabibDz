@@ -1,4 +1,4 @@
-const { register, login, refreshAuthToken, requestPasswordReset, resetPassword } = require('../services/authService');
+const { register, login, refreshAuthToken, requestPasswordReset, resetPassword, updateUserProfile } = require('../services/authService');
 
 const registerUser = async (req, res, next) => {
   try {
@@ -12,6 +12,15 @@ const registerUser = async (req, res, next) => {
 const getCurrentUser = async (req, res, next) => {
   try {
     res.json(req.user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateCurrentUser = async (req, res, next) => {
+  try {
+    const updatedUser = await updateUserProfile(req.user._id, req.body);
+    res.json(updatedUser);
   } catch (error) {
     next(error);
   }
@@ -56,4 +65,4 @@ const resetPasswordController = async (req, res, next) => {
   }
 };
 
-module.exports = { registerUser, loginUser, refreshToken, forgotPassword, resetPasswordController, getCurrentUser };
+module.exports = { registerUser, loginUser, refreshToken, forgotPassword, resetPasswordController, getCurrentUser, updateCurrentUser };

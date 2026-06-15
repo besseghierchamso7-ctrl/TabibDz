@@ -4,10 +4,32 @@ import { io } from 'socket.io-client';
 import apiClient from '../api/apiClient';
 
 const DoctorDashboard = () => {
-  const { user } = useContext(AuthContext);
+  const { user, updateProfile } = useContext(AuthContext);
   const [stats, setStats] = useState({ appointments: 0, confirmed: 0, pending: 0, patients: 0 });
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [profileFields, setProfileFields] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    gender: '',
+    avatar: ''
+  });
+  const [profileStatus, setProfileStatus] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      setProfileFields({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        gender: user.gender || '',
+        avatar: user.avatar || ''
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,6 +86,30 @@ const DoctorDashboard = () => {
     };
   }, [user]);
 
+  const handleProfileSubmit = async (event) => {
+    event.preventDefault();
+    setProfileStatus('Mise à jour en cours...');
+
+    try {
+      const updated = await updateProfile({
+        firstName: profileFields.firstName,
+        lastName: profileFields.lastName,
+        email: profileFields.email,
+        phone: profileFields.phone,
+        gender: profileFields.gender,
+        avatar: profileFields.avatar
+      });
+      setProfileFields((prev) => ({ ...prev, ...updated }));
+      setProfileStatus('Profil mis à jour avec succès');
+    } catch (error) {
+      setProfileStatus(error.message || 'Échec de la mise à jour du profil');
+    }
+  };
+
+  const handleProfileChange = (field, value) => {
+    setProfileFields((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {
       await apiClient.put(`/appointments/${appointmentId}/status`, { status: newStatus });
@@ -110,6 +156,85 @@ const DoctorDashboard = () => {
             <p className="mt-2 text-3xl font-bold text-blue-600">{stats.patients}</p>
           </div>
         </div>
+
+        <section className="rounded-2xl bg-white p-8 shadow-md border border-slate-200 mb-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.4em] text-slate-500">Mon profil médecin</p>
+              <h2 className="mt-2 text-2xl font-bold text-slate-900">Modifier mes informations</h2>
+              <p className="mt-2 text-sm text-slate-600">Mettez à jour votre nom, email, téléphone et photo de profil.</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleProfileSubmit} className="mt-8 grid gap-6 lg:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Prénom</label>
+              <input
+                value={profileFields.firstName}
+                onChange={(e) => handleProfileChange('firstName', e.target.value)}
+                required
+                className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Nom</label>
+              <input
+                value={profileFields.lastName}
+                onChange={(e) => handleProfileChange('lastName', e.target.value)}
+                required
+                className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
+              <input
+                type="email"
+                value={profileFields.email}
+                onChange={(e) => handleProfileChange('email', e.target.value)}
+                required
+                className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Téléphone</label>
+              <input
+                value={profileFields.phone}
+                onChange={(e) => handleProfileChange('phone', e.target.value)}
+                className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Genre</label>
+              <select
+                value={profileFields.gender}
+                onChange={(e) => handleProfileChange('gender', e.target.value)}
+                className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
+              >
+                <option value="">Sélectionner</option>
+                <option value="male">Homme</option>
+                <option value="female">Femme</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Avatar (URL)</label>
+              <input
+                value={profileFields.avatar}
+                onChange={(e) => handleProfileChange('avatar', e.target.value)}
+                className="w-full rounded-3xl border border-slate-200 px-4 py-3 focus:border-blue-500 focus:outline-none"
+                placeholder="https://..."
+              />
+            </div>
+            <div className="lg:col-span-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500">{profileStatus}</p>
+                <button type="submit" className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+                  Enregistrer les modifications
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
 
         {/* Requests */}
         <div className="rounded-2xl bg-white p-8 shadow-md border border-slate-200">
