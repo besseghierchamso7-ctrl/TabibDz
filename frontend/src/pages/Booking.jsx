@@ -52,6 +52,9 @@ const Booking = () => {
     'Deuxième consultation'
   ];
 
+  const selectedDateRange = availability.dateRanges?.find((range) => range.date === formData.date);
+  const isSelectedTimeInvalid = step === 2 && formData.date && formData.time && (!selectedDateRange || !selectedDateRange.times.includes(formData.time));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -72,7 +75,7 @@ const Booking = () => {
 
     setIsLoading(true);
     try {
-      const scheduledAt = `${formData.date}T${formData.time}:00.000Z`;
+      const scheduledAt = `${formData.date}T${formData.time}:00.000`;
       await apiClient.post('/appointments', {
         doctorId: id,
         scheduledAt,
@@ -207,7 +210,7 @@ const Booking = () => {
             <div className="mt-6">
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || (step === 2 && (!formData.date || !formData.time || isSelectedTimeInvalid))}
                 className="w-full rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Réservation en cours...' : step === 1 ? 'Continuer' : 'Confirmer la réservation'}
@@ -217,20 +220,29 @@ const Booking = () => {
 
           <aside className="space-y-6">
             <div className="rounded-3xl bg-white p-6 shadow-lg border border-slate-200">
+              {!doctor && (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-sm text-slate-500">Chargement du médecin…</p>
+                </div>
+              )}
+              {doctor && (
+              <>
               <div className="flex items-center gap-4">
                 <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-2xl font-bold text-blue-700">
                   {doctor?.user?.firstName?.charAt(0) || doctor?.firstName?.charAt(0) || 'D'}
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Dr</p>
-                  <h3 className="text-xl font-semibold text-slate-900">{doctor?.user?.firstName || doctor?.firstName || 'Emma'} {doctor?.user?.lastName || doctor?.lastName || 'OUVARD'}</h3>
-                  <p className="mt-1 text-sm text-slate-600">{doctor?.specialty?.name || doctor?.specialty || 'Cardiologue'}</p>
+                  <h3 className="text-xl font-semibold text-slate-900">{(doctor?.user?.firstName || doctor?.firstName || '').trim()} {(doctor?.user?.lastName || doctor?.lastName || '').trim()}</h3>
+                  <p className="mt-1 text-sm text-slate-600">{doctor?.specialty?.name || doctor?.specialty || ''}</p>
                 </div>
               </div>
-              <div className="mt-6 rounded-3xl bg-slate-50 p-4">
-                <p className="text-sm font-semibold text-slate-900">Votre rendez-vous en détail</p>
-                <p className="mt-4 text-sm text-slate-600">385 Avenue de l'Argonne, 33700 Mérignac</p>
-              </div>
+                <div className="mt-6 rounded-3xl bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-900">Votre rendez-vous en détail</p>
+                  <p className="mt-4 text-sm text-slate-600">{doctor?.addresses?.[0]?.street || doctor?.addresses?.[0]?.address || doctor?.user?.address || (doctor?.wilaya?.name ? doctor?.wilaya?.name : '')}</p>
+                </div>
+              </>
+              )}
             </div>
           </aside>
         </div>

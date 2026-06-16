@@ -4,6 +4,7 @@ import { AuthContext, AuthProvider } from './contexts/AuthContext';
 import Home from './pages/Home';
 import SearchDoctors from './pages/SearchDoctors';
 import DoctorProfile from './pages/DoctorProfile';
+import DoctorEditProfile from './pages/DoctorEditProfile';
 import Booking from './pages/Booking';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
@@ -58,6 +59,7 @@ function AppRoutes() {
         {/* Dashboard Pages with Layout - Protected */}
         <Route element={<ProtectedRoute requiredRole="patient"><Layout><PatientDashboard /></Layout></ProtectedRoute>} path="/dashboard/patient" />
         <Route element={<ProtectedRoute requiredRole="doctor"><Layout><DoctorDashboard /></Layout></ProtectedRoute>} path="/dashboard/doctor" />
+        <Route element={<ProtectedRoute requiredRole="doctor"><Layout><DoctorEditProfile /></Layout></ProtectedRoute>} path="/profile/doctor/edit" />
         <Route element={<ProtectedRoute requiredRole="admin"><Layout><AdminDashboard /></Layout></ProtectedRoute>} path="/dashboard/admin" />
         <Route element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} path="/profile" />
       </Routes>

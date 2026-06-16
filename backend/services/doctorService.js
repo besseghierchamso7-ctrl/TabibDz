@@ -36,6 +36,20 @@ const getDoctorById = async (doctorId) => {
     .populate('wilaya');
 };
 
+const formatLocalDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatLocalDateTimeKey = (date) => {
+  const dateKey = formatLocalDateKey(date);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${dateKey}T${hours}:${minutes}`;
+};
+
 const getDoctorAvailability = async (doctorId, query = {}) => {
   const doctor = await Doctor.findById(doctorId);
   if (!doctor) {
@@ -56,13 +70,13 @@ const getDoctorAvailability = async (doctorId, query = {}) => {
     date.setDate(startDate.getDate() + i);
     const dayName = dayNames[date.getDay()];
     if (!doctor.availability?.days?.length || doctor.availability.days.includes(dayName)) {
-      const dateKey = date.toISOString().slice(0, 10);
+      const dateKey = formatLocalDateKey(date);
       dateCandidates.push({ date, dateKey });
     }
   }
 
-  const fromUTC = dateCandidates.length ? new Date(`${dateCandidates[0].date.toISOString().slice(0, 10)}T00:00:00.000Z`) : new Date();
-  const toUTC = dateCandidates.length ? new Date(`${dateCandidates[dateCandidates.length - 1].date.toISOString().slice(0, 10)}T23:59:59.999Z`) : new Date();
+  const fromUTC = dateCandidates.length ? new Date(`${dateCandidates[0].dateKey}T00:00:00`) : new Date();
+  const toUTC = dateCandidates.length ? new Date(`${dateCandidates[dateCandidates.length - 1].dateKey}T23:59:59.999`) : new Date();
 
   const existingAppointments = await Appointment.find({
     doctor: doctorId,
@@ -70,13 +84,12 @@ const getDoctorAvailability = async (doctorId, query = {}) => {
     status: { $in: statusFilter }
   });
 
-  const existingSet = new Set(existingAppointments.map((appt) => `${appt.scheduledAt.toISOString().slice(0, 10)}T${appt.scheduledAt.toISOString().slice(11, 16)}`));
+  const existingSet = new Set(existingAppointments.map((appt) => formatLocalDateTimeKey(new Date(appt.scheduledAt))));
 
   for (const candidate of dateCandidates) {
     const availableTimes = [];
     const timeSlots = doctor.availability?.timeSlots || [];
     for (const timeSlot of timeSlots) {
-      const scheduledAt = new Date(`${candidate.dateKey}T${timeSlot}:00.000Z`);
       const isoKey = `${candidate.dateKey}T${timeSlot}`;
       if (!existingSet.has(isoKey)) {
         availableTimes.push(timeSlot);
@@ -109,4 +122,4 @@ const getTopDoctors = async () => {
   return Doctor.find({ status: 'verified' }).sort({ rating: -1 }).limit(6).populate('user specialty wilaya');
 };
 
-module.exports = { requestDoctorRegistration, getDoctors, getDoctorById, updateDoctorProfile, verifyDoctor, getTopDoctors };
+module.exports = { requestDoctorRegistration, getDoctors, getDoctorById, getDoctorAvailability, updateDoctorProfile, verifyDoctor, getTopDoctors };

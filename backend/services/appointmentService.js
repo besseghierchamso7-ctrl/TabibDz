@@ -16,7 +16,9 @@ const isDoctorAvailableAt = (doctor, scheduledAt) => {
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const scheduledDate = new Date(scheduledAt);
   const dayName = dayNames[scheduledDate.getDay()];
-  const time = scheduledDate.toISOString().slice(11, 16);
+  const hours = String(scheduledDate.getHours()).padStart(2, '0');
+  const minutes = String(scheduledDate.getMinutes()).padStart(2, '0');
+  const time = `${hours}:${minutes}`;
   return doctor.availability.days.includes(dayName) && doctor.availability.timeSlots.includes(time);
 };
 
@@ -25,6 +27,16 @@ const bookAppointment = async ({ patientId, doctorId, scheduledAt, reason, price
   if (!patient) throw new Error('Patient profile not found');
   const doctor = await Doctor.findById(doctorId);
   if (!doctor || doctor.status !== 'verified') throw new Error('Doctor unavailable');
+
+  const existingPatientAppointment = await Appointment.findOne({
+    patient: patientId,
+    doctor: doctorId,
+    status: { $in: ['pending', 'confirmed'] }
+  });
+  if (existingPatientAppointment) {
+    throw new Error('Vous avez déjà un rendez-vous en attente ou confirmé avec ce médecin');
+  }
+
   const scheduledDate = new Date(scheduledAt);
   if (!(await isSlotAvailable(doctorId, scheduledDate))) {
     throw new Error('Selected time slot is no longer available');
@@ -60,7 +72,18 @@ const getAppointments = async (filters, pagination = {}) => {
   if (filters.after) query.scheduledAt = { ...query.scheduledAt, $gte: new Date(filters.after) };
   if (filters.before) query.scheduledAt = { ...query.scheduledAt, $lte: new Date(filters.before) };
   return Appointment.find(query)
-    .populate('doctor patient')
+    .populate({
+      path: 'doctor',
+      populate: [
+        { path: 'user', select: 'firstName lastName email' },
+        { path: 'specialty', select: 'name' },
+        { path: 'wilaya', select: 'name' }
+      ]
+    })
+    .populate({
+      path: 'patient',
+      populate: { path: 'user', select: 'firstName lastName email' }
+    })
     .sort({ scheduledAt: 1 })
     .skip(pagination.skip || 0)
     .limit(pagination.limit || 50);

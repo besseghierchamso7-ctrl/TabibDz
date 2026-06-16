@@ -4,8 +4,9 @@ import { AuthContext } from '../contexts/AuthContext';
 import apiClient from '../api/apiClient';
 
 const Register = () => {
-  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '', role: 'patient', specialty: '' });
+  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '', role: 'patient', specialty: '', wilaya: '' });
   const [specialties, setSpecialties] = useState([]);
+  const [wilayas, setWilayas] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -17,6 +18,7 @@ const Register = () => {
     const nextFormData = { ...formData, [name]: value };
     if (name === 'role' && value !== 'doctor') {
       nextFormData.specialty = '';
+      nextFormData.wilaya = '';
     }
     setFormData(nextFormData);
   };
@@ -30,8 +32,17 @@ const Register = () => {
         console.error('Erreur en chargeant les spécialités:', err);
       }
     };
+    const fetchWilayas = async () => {
+      try {
+        const res = await apiClient.get('/admin/wilayas');
+        setWilayas(res.data || []);
+      } catch (err) {
+        console.error('Erreur en chargeant les wilayas:', err);
+      }
+    };
 
     fetchSpecialties();
+    fetchWilayas();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -56,7 +67,8 @@ const Register = () => {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        specialty: formData.role === 'doctor' ? formData.specialty : undefined
+        specialty: formData.role === 'doctor' ? formData.specialty : undefined,
+        wilaya: formData.role === 'doctor' ? formData.wilaya : undefined
       });
       navigate('/login', {
         state: {
@@ -191,6 +203,24 @@ const Register = () => {
                   <option value="">Sélectionnez votre spécialité</option>
                   {specialties.map((spec) => (
                     <option key={spec._id} value={spec._id}>{spec.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {formData.role === 'doctor' && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700">Wilaya</label>
+                <select
+                  name="wilaya"
+                  value={formData.wilaya}
+                  onChange={handleChange}
+                  required
+                  className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-2.5 focus:border-blue-500 focus:outline-none transition text-sm"
+                >
+                  <option value="">Sélectionnez votre wilaya</option>
+                  {wilayas.map((w) => (
+                    <option key={w._id} value={w._id}>{w.name}</option>
                   ))}
                 </select>
               </div>

@@ -9,6 +9,10 @@ const morgan = require('morgan');
 const dotenv = require('dotenv');
 const { connectDB } = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const { sendSuccess, sendError } = require('./utils/response');
+const { HTTP_STATUS } = require('./utils/constants');
+
+// Import routes
 const authRoutes = require('./routes/authRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
 const patientRoutes = require('./routes/patientRoutes');
@@ -27,6 +31,19 @@ const rateLimiter = require('./middleware/rateLimiter');
 
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+const jwtExpiry = process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRE;
+if (!jwtExpiry) {
+  missingEnvVars.push('JWT_EXPIRES_IN or JWT_EXPIRE');
+}
+
+if (missingEnvVars.length > 0) {
+  console.error(`✗ Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  process.exit(1);
+}
+
 const app = express();
 const http = require('http');
 const { Server } = require('socket.io');
@@ -35,7 +52,7 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 
 dns.setServers(['1.1.1.1', '8.8.8.8']);
-console.log('Using DNS servers:', dns.getServers());
+console.log('✓ DNS servers configured:', dns.getServers());
 
 connectDB();
 
@@ -65,21 +82,66 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-app.use(helmet());
+
+// Enhanced Helmet security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+    },
+  },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true,
+  },
+  frameguard: { action: 'deny' },
+  referrerPolicy: { policy: 'no-referrer' },
+}));
+
 app.use(xssClean());
-app.use(mongoSanitize());
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(mongoSanitize({
+  replaceWith: '_',
+  onSanitize: ({ req, key }) => {
+    console.warn(`Sanitized key "${key}" in request`);
+  },
+}));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(rateLimiter);
-app.use(morgan('dev'));
+
+// Morgan logging with custom format for production
+const morganFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev';
+app.use(morgan(morganFormat));
+
+// Static file serving
 app.use('/uploads', express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads')));
 
+// Health check endpoints
+app.get('/health', (req, res) => {
+  return sendSuccess(res, { 
+    status: 'healthy',
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  }, 'Server is healthy');
+});
+
 app.get('/', (req, res) => {
-  res.send('Tabib DZ API is running');
+  return sendSuccess(res, { 
+    api: 'Tabib DZ Medical Appointment Platform',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV || 'development'
+  }, 'Welcome to Tabib DZ API');
 });
 
 app.get('/api', (req, res) => {
-  res.json({ message: 'Tabib DZ API is running' });
+  return sendSuccess(res, { 
+    message: 'Tabib DZ API is running',
+    version: '1.0.0'
+  });
 });
 
 app.get('/api/stats/public', async (req, res, next) => {
@@ -94,11 +156,11 @@ app.get('/api/stats/public', async (req, res, next) => {
       Appointment.countDocuments({ status: 'confirmed' })
     ]);
 
-    res.json({
+    return sendSuccess(res, {
       patients: patientCount,
       doctors: doctorCount,
       appointments: appointmentCount
-    });
+    }, 'Public statistics retrieved successfully');
   } catch (error) {
     next(error);
   }

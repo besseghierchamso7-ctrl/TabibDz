@@ -1,4 +1,5 @@
-const { requestDoctorRegistration, getDoctors, getDoctorById, updateDoctorProfile, verifyDoctor, getTopDoctors, getDoctorAvailability } = require('../services/doctorService');
+const { requestDoctorRegistration, getDoctors, getDoctorById, getDoctorAvailability, updateDoctorProfile, verifyDoctor, getTopDoctors } = require('../services/doctorService');
+const Doctor = require('../models/Doctor');
 
 const createDoctorRequest = async (req, res, next) => {
   try {
@@ -64,4 +65,16 @@ const topDoctors = async (req, res, next) => {
   }
 };
 
-module.exports = { createDoctorRequest, listDoctors, doctorDetails, updateDoctor, approveDoctor, getAvailability, topDoctors };
+const getCurrentDoctorProfile = async (req, res, next) => {
+  try {
+    const doctor = await Doctor.findOne({ user: req.user._id }).populate('specialty wilaya');
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor profile not found' });
+    }
+    res.json(doctor);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { createDoctorRequest, listDoctors, doctorDetails, updateDoctor, approveDoctor, getAvailability, topDoctors, getCurrentDoctorProfile };

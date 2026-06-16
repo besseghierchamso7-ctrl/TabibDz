@@ -6,7 +6,7 @@ const Specialty = require('../models/Specialty');
 const Wilaya = require('../models/Wilaya');
 
 const getDashboardStats = async () => {
-  const doctorsCount = await Doctor.countDocuments();
+  const doctorsCount = await Doctor.countDocuments({ status: 'verified' });
   const patientsCount = await User.countDocuments({ role: 'patient' });
   const appointmentsCount = await Appointment.countDocuments();
   const confirmedCount = await Appointment.countDocuments({ status: 'confirmed' });

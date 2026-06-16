@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Doctor = require('../models/Doctor');
+const Patient = require('../models/Patient');
 const { generateToken, generateRefreshToken } = require('../utils/token');
 const { sendEmail } = require('../config/mail');
 
@@ -30,13 +31,14 @@ const sanitizeUser = async (user) => {
 
 const sendRegistrationEmail = async (user) => {
   try {
+    const roleText = user.role === 'doctor' ? 'Votre demande d\'enregistrement en tant que médecin a été reçue et est en attente d\'approbation de l\'administrateur.' : 'Vous pouvez maintenant vous connecter et prendre rendez-vous avec nos médecins.';
     await sendEmail({
       to: user.email,
       subject: 'Bienvenue sur Tabib DZ',
       html: `
         <p>Bonjour ${user.firstName},</p>
         <p>Merci de vous être inscrit sur Tabib DZ. Votre compte a été créé avec succès.</p>
-        <p>Vous pouvez maintenant vous connecter et prendre rendez-vous avec nos médecins.</p>
+        <p>${roleText}</p>
         <p>À bientôt,<br/>L'équipe Tabib DZ</p>
       `
     });
@@ -50,7 +52,39 @@ const register = async (data) => {
   if (userExists) {
     throw createApiError('Email already registered', 409);
   }
-  const user = await User.create(data);
+  
+  // Extract doctor-specific fields
+  const specialtyId = data.specialty;
+  const wilayaId = data.wilaya;
+  const userData = { ...data };
+  delete userData.specialty; // Remove specialty from user data
+  delete userData.wilaya; // Remove wilaya from user data
+  
+  const user = await User.create(userData);
+  
+  // Create a patient profile for patients automatically
+  if (user.role === 'patient') {
+    await Patient.create({ user: user._id });
+  }
+
+  // If registering as doctor, create doctor profile with pending status
+  if (user.role === 'doctor') {
+    if (!specialtyId) {
+      throw createApiError('Specialty is required for doctors', 400);
+    }
+    if (!wilayaId) {
+      throw createApiError('Wilaya is required for doctors', 400);
+    }
+
+    await Doctor.create({
+      user: user._id,
+      specialty: specialtyId,
+      wilaya: wilayaId,
+      consultationPrice: 1000, // Default consultation price in DZD
+      status: 'pending' // Doctor starts in pending approval state
+    });
+  }
+  
   const token = generateToken(user);
   const refreshToken = generateRefreshToken(user);
   user.refreshToken = refreshToken;

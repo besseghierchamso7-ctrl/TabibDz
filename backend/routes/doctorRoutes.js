@@ -1,5 +1,5 @@
 const express = require('express');
-const { createDoctorRequest, listDoctors, doctorDetails, updateDoctor, approveDoctor, getAvailability, topDoctors } = require('../controllers/doctorController');
+const { createDoctorRequest, listDoctors, doctorDetails, updateDoctor, approveDoctor, getAvailability, topDoctors, getCurrentDoctorProfile } = require('../controllers/doctorController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const upload = require('../utils/upload');
 
@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.get('/', listDoctors);
 router.get('/top', topDoctors);
+router.get('/me', protect, authorize('doctor'), getCurrentDoctorProfile);
 router.get('/:id/availability', getAvailability);
 router.get('/:id', doctorDetails);
 router.post('/request', protect, authorize('doctor', 'admin'), createDoctorRequest);

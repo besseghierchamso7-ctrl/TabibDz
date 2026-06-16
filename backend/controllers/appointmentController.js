@@ -5,9 +5,9 @@ const Doctor = require('../models/Doctor');
 
 const createAppointment = async (req, res, next) => {
   try {
-    const patientProfile = await Patient.findOne({ user: req.user._id });
+    let patientProfile = await Patient.findOne({ user: req.user._id });
     if (!patientProfile) {
-      return res.status(400).json({ message: 'Patient profile not found' });
+      patientProfile = await Patient.create({ user: req.user._id });
     }
     const appointment = await bookAppointment({
       patientId: patientProfile._id,
@@ -32,6 +32,14 @@ const getAllAppointments = async (req, res, next) => {
         return res.status(404).json({ message: 'Doctor profile not found' });
       }
       filters.doctor = doctorProfile._id.toString();
+    }
+
+    if (req.user.role === 'patient') {
+      const patientProfile = await Patient.findOne({ user: req.user._id });
+      if (!patientProfile) {
+        return res.status(404).json({ message: 'Patient profile not found' });
+      }
+      filters.patient = patientProfile._id.toString();
     }
 
     const appointments = await getAppointments(filters, { skip: Number(req.query.skip) || 0, limit: Number(req.query.limit) || 50 });

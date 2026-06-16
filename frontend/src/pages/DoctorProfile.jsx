@@ -33,6 +33,16 @@ const DoctorProfile = () => {
     reviews: 127,
     consultationPrice: 4500,
     experience: '12 ans',
+    address: '385 Avenue de l\'Argonne, 33700 Mérignac',
+    availability: {
+      monday: { enabled: true, startTime: '08:00', endTime: '17:00' },
+      tuesday: { enabled: true, startTime: '08:00', endTime: '17:00' },
+      wednesday: { enabled: true, startTime: '08:00', endTime: '17:00' },
+      thursday: { enabled: true, startTime: '08:00', endTime: '17:00' },
+      friday: { enabled: true, startTime: '08:00', endTime: '17:00' },
+      saturday: { enabled: false, startTime: '08:00', endTime: '17:00' },
+      sunday: { enabled: false, startTime: '08:00', endTime: '17:00' }
+    },
     about: 'Spécialisée en cardiologie générale et interventionnelle, avec une expertise particulière dans le traitement des maladies cardiovasculaires chroniques. Formation continue en France et Belgique.',
   };
 
@@ -48,7 +58,18 @@ const DoctorProfile = () => {
   const reviews = doctorData.reviews || 127;
   const price = doctorData.consultationPrice || doctorData.price || 4500;
   const experience = doctorData.experience || '12 ans';
-  const about = doctorData.user?.bio || doctorData.about || 'Spécialisée en cardiologie générale et interventionnelle, avec une expertise particulière dans le traitement des maladies cardiovasculaires chroniques. Formation continue en France et Belgique.';
+  const address = doctorData.address || doctorData.user?.address || 'Adresse du cabinet non renseignée.';
+  const about = doctorData.bio || doctorData.user?.bio || doctorData.about || 'Spécialisée en cardiologie générale et interventionnelle, avec une expertise particulière dans le traitement des maladies cardiovasculaires chroniques. Formation continue en France et Belgique.';
+  const availability = doctorData.availability || { days: [], timeSlots: [] };
+  const dayLabels = {
+    monday: 'Lundi',
+    tuesday: 'Mardi',
+    wednesday: 'Mercredi',
+    thursday: 'Jeudi',
+    friday: 'Vendredi',
+    saturday: 'Samedi',
+    sunday: 'Dimanche'
+  };
 
   const fullName = `${firstName} ${lastName}`.trim();
   return (
@@ -99,64 +120,62 @@ const DoctorProfile = () => {
               <p className="mt-4 leading-relaxed text-slate-600">{about}</p>
             </div>
 
-            {/* Qualifications removed by request */}
-
-            {/* Public reçu removed by request */}
-
-            {/* Tarifs et remboursement removed by request */}
-
-            {/* Moyens de paiement removed by request */}
-
-            {/* Disponibilités removed by request */}
-
-            {/* Types de consultations removed by request */}
+            {/* Horaires d'ouverture */}
+            <div className="rounded-3xl bg-white p-8 shadow-md border border-slate-200">
+              <h2 className="text-2xl font-bold text-slate-900">Horaires d'ouverture</h2>
+              {Object.keys(availability).some(day => availability[day]?.enabled) ? (
+                <div className="mt-6 space-y-3">
+                  {Object.entries(availability).map(([day, hours]) => 
+                    hours?.enabled ? (
+                      <div key={day} className="flex justify-between items-center p-3 rounded-lg bg-blue-50 border border-blue-200">
+                        <span className="font-semibold text-slate-800">{dayLabels[day]}</span>
+                        <span className="text-slate-700">
+                          {hours.startTime} - {hours.endTime}
+                        </span>
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              ) : (
+                <p className="mt-4 text-slate-500">Aucun horaire renseigné pour le moment.</p>
+              )}
+            </div>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Addresses moved here per request */}
+            {/* Adresses */}
             <div className="rounded-3xl bg-white p-6 shadow-md border border-slate-200">
-              <div className="flex items-start justify-between">
+              <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-900">Adresses</h2>
                 <a href="#addresses" className="text-sm text-blue-600">Voir plus</a>
               </div>
               <div className="mt-4 text-sm text-slate-700">
-                {doctorData.addresses && doctorData.addresses.length > 0 ? (
-                  doctorData.addresses.map((addr, idx) => (
-                    <div key={idx} className="mb-3">
-                      <div className="font-medium">{addr.name || addr.location || 'KAP CARE ESPACE SANTE'}</div>
-                      <div className="text-xs text-slate-500">{addr.street || addr.address || '385 Avenue de l\'Argonne'}</div>
-                      <div className="text-xs text-slate-500">{addr.city || addr.wilaya || '33700 Mérignac'}</div>
-                    </div>
-                  ))
-                ) : (
-                  <div>Adresse du cabinet non renseignée.</div>
-                )}
+                <div className="mb-3">
+                  <div className="font-medium">Cabinet principal</div>
+                  <div className="text-xs text-slate-500">{address}</div>
+                </div>
               </div>
             </div>
-            {/* Summary / Pricing Card removed by request */}
 
-            {/* Quick Info */}
-            {/* Langues, Assurances acceptées, Localisation removed by request */}
-
-            {/* Horaires d'ouverture */}
+            {/* Horaires d'ouverture résumé */}
             <div className="rounded-3xl bg-white p-6 shadow-md border border-slate-200">
               <h3 className="font-semibold text-slate-900">Horaires d'ouverture</h3>
-              <ol className="mt-3 text-sm text-slate-600 list-decimal list-inside space-y-1">
-                <li>lundi: 08h15 - 17h30</li>
-                <li>mardi: 08h15 - 17h30</li>
-                <li>mercredi: 08h15 - 13h00</li>
-                <li>jeudi: 08h15 - 17h30</li>
-                <li>vendredi: Fermé</li>
-                <li>samedi: Fermé</li>
-                <li>dimanche: Fermé</li>
-              </ol>
+              {Object.keys(availability).some(day => availability[day]?.enabled) ? (
+                <div className="mt-3 text-sm text-slate-600 space-y-2">
+                  {Object.entries(availability).map(([day, hours]) =>
+                    hours?.enabled ? (
+                      <div key={day} className="flex justify-between">
+                        <span>{dayLabels[day] || day}</span>
+                        <span className="font-medium">{hours.startTime} - {hours.endTime}</span>
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-slate-500">Aucun horaire renseigné.</p>
+              )}
             </div>
-
-            {/* Horaires et coordonnées removed by request */}
-
-            {/* Reviews Preview */}
-            {/* Avis patients removed by request */}
           </div>
         </div>
       </section>

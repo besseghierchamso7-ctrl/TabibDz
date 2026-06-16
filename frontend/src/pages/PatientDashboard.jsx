@@ -71,11 +71,13 @@ const PatientDashboard = () => {
           <h2 className="text-2xl font-bold text-slate-900">Mes rendez-vous</h2>
           <div className="mt-6 space-y-4">
             {appointments.map((apt) => {
-              const doctorName = apt.doctor?.user ? `${apt.doctor.user.firstName} ${apt.doctor.user.lastName}` : apt.doctor?.name || apt.doctorId || 'Médecin';
+              const doctorName = apt.doctor?.user?.firstName || apt.doctor?.firstName || apt.doctor?.name || apt.doctorId || 'Médecin';
+              const doctorLastName = apt.doctor?.user?.lastName || apt.doctor?.lastName || '';
+              const fullDoctorName = `${doctorName}${doctorLastName ? ` ${doctorLastName}` : ''}`.trim() || 'Médecin';
               const specialty = apt.doctor?.specialty?.name || apt.specialty || 'N/A';
               const scheduledDate = apt.scheduledAt ? new Date(apt.scheduledAt).toLocaleDateString('fr-FR') : apt.date;
               const scheduledTime = apt.scheduledAt ? new Date(apt.scheduledAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : apt.time;
-              const statusLabel = apt.status === 'confirmed' ? 'Confirmé' : apt.status === 'pending' ? 'En attente' : apt.status;
+              const statusLabel = apt.status === 'confirmed' ? 'Confirmé' : apt.status === 'pending' ? 'En attente' : apt.status || 'N/A';
               return (
                 <div key={apt._id || apt.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-4 hover:bg-slate-50">
                   <div>
