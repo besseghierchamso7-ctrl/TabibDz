@@ -22,6 +22,7 @@ const AdminDashboard = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [requests, setRequests] = useState([]);
   const [recentAppointments, setRecentAppointments] = useState([]);
+  const [approvingId, setApprovingId] = useState(null);
 
   useEffect(() => {
     if (!token) return; // wait for auth token
@@ -47,6 +48,7 @@ const AdminDashboard = () => {
 
         const pendingRequests = (doctorsRes.data || []).filter((doctor) => doctor.status === 'pending');
         setRequests(pendingRequests.slice(0, 3).map((doctor) => ({
+          id: doctor._id,
           name: `Dr. ${doctor.user?.firstName || ''} ${doctor.user?.lastName || ''}`.trim(),
           specialty: doctor.specialty?.name || 'N/A',
           status: 'Nouveau'
@@ -157,6 +159,35 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Erreur suppression patient :', error);
       alert('Erreur lors de la suppression du patient.');
+    }
+  };
+
+  const handleApproveDoctor = async (doctorId) => {
+    if (!doctorId) return;
+    try {
+      setApprovingId(doctorId);
+      await apiClient.put(`/doctors/${doctorId}/verify`, { status: 'verified' });
+      setRequests((r) => r.filter((req) => req.id !== doctorId));
+      setStats((s) => ({ ...s, doctorsCount: (s.doctorsCount || 0) + 1 }));
+    } catch (error) {
+      console.error('Erreur lors de l\'approbation du médecin :', error);
+      alert('Erreur lors de l\'approbation du médecin.');
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleRejectDoctor = async (doctorId) => {
+    if (!doctorId) return;
+    try {
+      setApprovingId(doctorId);
+      await apiClient.put(`/doctors/${doctorId}/verify`, { status: 'rejected' });
+      setRequests((r) => r.filter((req) => req.id !== doctorId));
+    } catch (error) {
+      console.error('Erreur lors du rejet du médecin :', error);
+      alert('Erreur lors du rejet du médecin.');
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -294,7 +325,7 @@ const AdminDashboard = () => {
             </div>
             <div className="mt-6 space-y-4">
               {requests.map((item) => (
-                <div key={item.name} className="rounded-3xl border border-slate-200 p-4">
+                <div key={item.id} className="rounded-3xl border border-slate-200 p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="font-semibold text-slate-900">{item.name}</p>
@@ -303,11 +334,18 @@ const AdminDashboard = () => {
                     <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">{item.status}</span>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <button className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700">Approuver</button>
-                    <button className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs text-slate-700 hover:bg-slate-100">Voir dossier</button>
+                    <button onClick={() => handleApproveDoctor(item.id)} disabled={approvingId === item.id} className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                      {approvingId === item.id ? 'Approbation...' : 'Approuver'}
+                    </button>
+                    <button onClick={() => handleRejectDoctor(item.id)} disabled={approvingId === item.id} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                      {approvingId === item.id ? 'Traitement...' : 'Refuser'}
+                    </button>
                   </div>
                 </div>
               ))}
+              {requests.length === 0 && (
+                <p className="text-center text-sm text-slate-500">Aucune demande de vérification en attente</p>
+              )}
             </div>
           </div>
 
