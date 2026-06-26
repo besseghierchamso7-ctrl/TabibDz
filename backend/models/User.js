@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   lastName: { type: String, required: true, trim: true, maxlength: 50 },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 100 },
   password: { type: String, required: true, minlength: 8 },
-  role: { type: String, enum: ['patient', 'doctor', 'admin'], default: 'patient' },
+  role: { type: String, enum: ['patient', 'doctor', 'admin', 'clinic_manager'], default: 'patient' },
   phone: { type: String, trim: true, maxlength: 20 },
   gender: { type: String, enum: ['male', 'female', 'other'] },
   avatar: { type: String },

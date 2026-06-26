@@ -8,6 +8,9 @@ const Specialty = require('../models/Specialty');
 const Wilaya = require('../models/Wilaya');
 const Appointment = require('../models/Appointment');
 const Review = require('../models/Review');
+const Clinic = require('../models/Clinic');
+const Prescription = require('../models/Prescription');
+const Teleconsultation = require('../models/Teleconsultation');
 
 dotenv.config();
 
@@ -126,11 +129,44 @@ const importData = async () => {
     ]);
 
     const admin = await User.create({ firstName: 'Admin', lastName: 'Tabib', email: 'admin@tabibdz.com', password: 'Admin1234', role: 'admin', isVerified: true });
+    const clinicManager = await User.create({ firstName: 'Meriem', lastName: 'Manager', email: 'manager@tabibdz.com', password: 'Manager123', role: 'clinic_manager', isVerified: true });
     const patientUser = await User.create({ firstName: 'Nadia', lastName: 'Brahimi', email: 'nadia@example.com', password: 'Patient123', role: 'patient', isVerified: true });
     const patient = await Patient.create({ user: patientUser._id, birthDate: new Date('1990-03-15'), address: 'Alger Centre' });
     const doctorUser = await User.create({ firstName: 'Said', lastName: 'Ait', email: 'said@example.com', password: 'Doctor123', role: 'doctor', isVerified: true });
     const doctor = await Doctor.create({ user: doctorUser._id, specialty: specialties[0]._id, wilaya: wilayas[0]._id, consultationPrice: 3000, status: 'verified', availability: { days: ['monday', 'wednesday', 'friday'], timeSlots: ['09:00', '10:00', '14:00'] } });
-    await Appointment.create({ patient: patient._id, doctor: doctor._id, scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), status: 'pending', reason: 'Contrôle général', price: 3000, paymentStatus: 'pending' });
+    const clinic = await Clinic.create({
+      name: 'Clinique Tabib DZ',
+      address: 'Rue Didouche Mourad, Alger',
+      wilaya: wilayas[0]._id,
+      phone: '0550 123 456',
+      verified: true,
+      managers: [clinicManager._id]
+    });
+    const appointment = await Appointment.create({
+      patient: patient._id,
+      doctor: doctor._id,
+      scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      status: 'pending',
+      reason: 'Contrôle général',
+      price: 3000,
+      paymentStatus: 'pending'
+    });
+    await Prescription.create({
+      patient: patient._id,
+      doctor: doctor._id,
+      medications: [{ name: 'Paracétamol', dosage: '500mg', instructions: '2 fois par jour après les repas' }],
+      validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      notes: 'Prescription de base pour test'
+    });
+    await Teleconsultation.create({
+      appointment: appointment._id,
+      doctor: doctor._id,
+      patient: patient._id,
+      clinic: clinic._id,
+      roomName: `tabib-test-${Date.now()}`,
+      scheduledAt: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+      status: 'scheduled'
+    });
     await Review.create({ patient: patient._id, doctor: doctor._id, rating: 5, comment: 'Un excellent médecin' });
     console.log('Seed data imported');
     process.exit();
